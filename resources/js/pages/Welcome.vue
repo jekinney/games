@@ -2,6 +2,7 @@
 import { Button } from '@/components/ui/button';
 import { Head, Link } from '@inertiajs/vue3';
 import { Gamepad2, Trophy, Users, Zap } from 'lucide-vue-next';
+import MainLayout from '@/layouts/MainLayout.vue';
 
 defineProps<{
     auth: {
@@ -12,51 +13,8 @@ defineProps<{
 
 <template>
     <Head title="Welcome to Games Hub" />
-
-    <div class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <!-- Navigation -->
-        <nav class="border-b border-white/10 bg-black/20 backdrop-blur-sm">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                <div class="flex h-16 justify-between">
-                    <div class="flex items-center">
-                        <Gamepad2 class="h-8 w-8 text-purple-400" />
-                        <span class="ml-2 text-xl font-bold text-white">Games Hub</span>
-                    </div>
-
-                    <div class="flex items-center space-x-4">
-                        <Link href="/games" class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:text-white">
-                            Games
-                        </Link>
-
-                        <div v-if="auth.user" class="flex items-center space-x-4">
-                            <span class="text-gray-300">Welcome, {{ auth.user.name }}!</span>
-                            <Link
-                                :href="route('profile')"
-                                class="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700"
-                            >
-                                Profile
-                            </Link>
-                        </div>
-
-                        <div v-else class="flex items-center space-x-4">
-                            <Link
-                                :href="route('login')"
-                                class="rounded-md px-3 py-2 text-sm font-medium text-gray-300 transition-colors hover:text-white"
-                            >
-                                Log in
-                            </Link>
-                            <Link
-                                :href="route('register')"
-                                class="rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700"
-                            >
-                                Get Started
-                            </Link>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </nav>
-
+    
+    <MainLayout>
         <!-- Hero Section -->
         <div class="relative overflow-hidden">
             <div class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
@@ -146,14 +104,5 @@ defineProps<{
                 </div>
             </div>
         </div>
-
-        <!-- Footer -->
-        <footer class="border-t border-white/10 bg-black/40">
-            <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-                <div class="text-center text-gray-400">
-                    <p>&copy; 2025 Games Hub. Built with Laravel and Vue.js.</p>
-                </div>
-            </div>
-        </footer>
-    </div>
+    </MainLayout>
 </template>
