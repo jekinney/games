@@ -5,7 +5,7 @@ import NavUser from '@/components/NavUser.vue';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type User } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, Folder, User as UserIcon, Shield } from 'lucide-vue-next';
+import { BookOpen, Folder, Shield, User as UserIcon } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -23,11 +23,15 @@ const mainNavItems: NavItem[] = [
         href: '/profile',
         icon: UserIcon,
     },
-    ...(hasAdminAccess.value ? [{
-        title: 'Admin',
-        href: '/admin',
-        icon: Shield,
-    }] : []),
+    ...(hasAdminAccess.value
+        ? [
+              {
+                  title: 'Admin',
+                  href: '/admin',
+                  icon: Shield,
+              },
+          ]
+        : []),
 ];
 
 const footerNavItems: NavItem[] = [

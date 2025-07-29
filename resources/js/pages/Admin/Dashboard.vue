@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Users, UserCheck, UserX, Shield, Calendar, TrendingUp, Eye, Settings, Database } from 'lucide-vue-next';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { Head, Link } from '@inertiajs/vue3';
+import { Calendar, Database, Eye, Settings, Shield, TrendingUp, UserCheck, Users, UserX } from 'lucide-vue-next';
 
 interface Stats {
     total_users: number;
@@ -32,16 +32,19 @@ defineProps<{
 const getRoleColor = (role: string) => {
     const colors = {
         'super-admin': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
-        'admin': 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-        'moderator': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-        'player': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+        admin: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+        moderator: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+        player: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
     };
     return colors[role as keyof typeof colors] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300';
 };
 
 // Function to format role name
 const formatRole = (role: string) => {
-    return role.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    return role
+        .split('-')
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
 };
 </script>
 
@@ -50,17 +53,15 @@ const formatRole = (role: string) => {
         <Head title="Admin Dashboard" />
 
         <div class="py-8">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <!-- Header -->
                 <div class="mb-8">
                     <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Admin Dashboard</h1>
-                    <p class="mt-1 text-gray-600 dark:text-gray-400">
-                        Monitor and manage your Games Hub platform
-                    </p>
+                    <p class="mt-1 text-gray-600 dark:text-gray-400">Monitor and manage your Games Hub platform</p>
                 </div>
 
                 <!-- Stats Grid -->
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                <div class="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
                     <!-- Total Users -->
                     <Card>
                         <CardContent class="p-6">
@@ -147,7 +148,7 @@ const formatRole = (role: string) => {
                     </Card>
                 </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
                     <!-- Recent Users -->
                     <div class="lg:col-span-2">
                         <Card>
@@ -156,16 +157,18 @@ const formatRole = (role: string) => {
                                     <Users class="h-5 w-5" />
                                     <span>Recent Users</span>
                                 </CardTitle>
-                                <CardDescription>
-                                    Latest user registrations
-                                </CardDescription>
+                                <CardDescription> Latest user registrations </CardDescription>
                             </CardHeader>
                             <CardContent>
                                 <div class="space-y-4">
-                                    <div v-for="user in recent_users" :key="user.id" class="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                    <div
+                                        v-for="user in recent_users"
+                                        :key="user.id"
+                                        class="flex items-center justify-between rounded-lg border border-gray-200 p-4 dark:border-gray-700"
+                                    >
                                         <div class="flex items-center space-x-4">
                                             <div class="flex-shrink-0">
-                                                <div class="h-10 w-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center">
+                                                <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-300 dark:bg-gray-600">
                                                     <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
                                                         {{ user.name.charAt(0).toUpperCase() }}
                                                     </span>
@@ -178,25 +181,20 @@ const formatRole = (role: string) => {
                                             </div>
                                         </div>
                                         <div class="flex items-center space-x-2">
-                                            <Badge v-if="user.email_verified_at" variant="outline" class="text-green-600 border-green-600">
+                                            <Badge v-if="user.email_verified_at" variant="outline" class="border-green-600 text-green-600">
                                                 ✓ Verified
                                             </Badge>
-                                            <Badge v-else variant="outline" class="text-yellow-600 border-yellow-600">
-                                                ⚠ Unverified
-                                            </Badge>
-                                            <Badge 
-                                                v-if="user.roles.length > 0"
-                                                :class="getRoleColor(user.roles[0])"
-                                            >
+                                            <Badge v-else variant="outline" class="border-yellow-600 text-yellow-600"> ⚠ Unverified </Badge>
+                                            <Badge v-if="user.roles.length > 0" :class="getRoleColor(user.roles[0])">
                                                 {{ formatRole(user.roles[0]) }}
                                             </Badge>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                                <div class="mt-6 border-t border-gray-200 pt-4 dark:border-gray-700">
                                     <Link :href="route('admin.users')">
                                         <Button variant="outline" class="w-full">
-                                            <Eye class="h-4 w-4 mr-2" />
+                                            <Eye class="mr-2 h-4 w-4" />
                                             View All Users
                                         </Button>
                                     </Link>
@@ -211,34 +209,32 @@ const formatRole = (role: string) => {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Quick Actions</CardTitle>
-                                <CardDescription>
-                                    Common administrative tasks
-                                </CardDescription>
+                                <CardDescription> Common administrative tasks </CardDescription>
                             </CardHeader>
                             <CardContent class="space-y-3">
                                 <Link :href="route('admin.users')" class="block">
                                     <Button variant="outline" class="w-full justify-start">
-                                        <Users class="h-4 w-4 mr-2" />
+                                        <Users class="mr-2 h-4 w-4" />
                                         Manage Users
                                     </Button>
                                 </Link>
-                                
+
                                 <Link :href="route('admin.settings')" class="block">
                                     <Button variant="outline" class="w-full justify-start">
-                                        <Settings class="h-4 w-4 mr-2" />
+                                        <Settings class="mr-2 h-4 w-4" />
                                         System Settings
                                     </Button>
                                 </Link>
-                                
+
                                 <Link :href="route('admin.games')" class="block">
                                     <Button variant="outline" class="w-full justify-start">
-                                        <Gamepad2 class="h-4 w-4 mr-2" />
+                                        <Gamepad2 class="mr-2 h-4 w-4" />
                                         Manage Games
                                     </Button>
                                 </Link>
-                                
+
                                 <Button variant="outline" class="w-full justify-start" disabled>
-                                    <Database class="h-4 w-4 mr-2" />
+                                    <Database class="mr-2 h-4 w-4" />
                                     Game Analytics
                                     <span class="ml-auto text-xs text-gray-500">Coming Soon</span>
                                 </Button>
@@ -253,23 +249,17 @@ const formatRole = (role: string) => {
                             <CardContent class="space-y-3">
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm text-gray-600 dark:text-gray-400">Database</span>
-                                    <Badge variant="outline" class="text-green-600 border-green-600">
-                                        ✓ Online
-                                    </Badge>
+                                    <Badge variant="outline" class="border-green-600 text-green-600"> ✓ Online </Badge>
                                 </div>
-                                
+
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm text-gray-600 dark:text-gray-400">Cache</span>
-                                    <Badge variant="outline" class="text-green-600 border-green-600">
-                                        ✓ Active
-                                    </Badge>
+                                    <Badge variant="outline" class="border-green-600 text-green-600"> ✓ Active </Badge>
                                 </div>
-                                
+
                                 <div class="flex items-center justify-between">
                                     <span class="text-sm text-gray-600 dark:text-gray-400">Queue</span>
-                                    <Badge variant="outline" class="text-green-600 border-green-600">
-                                        ✓ Running
-                                    </Badge>
+                                    <Badge variant="outline" class="border-green-600 text-green-600"> ✓ Running </Badge>
                                 </div>
                             </CardContent>
                         </Card>
@@ -288,14 +278,16 @@ const formatRole = (role: string) => {
                                         <div class="font-medium text-gray-900 dark:text-white">{{ stats.recent_registrations }} new users</div>
                                         <div class="text-gray-600 dark:text-gray-400">registered this week</div>
                                     </div>
-                                    
+
                                     <div class="text-sm">
                                         <div class="font-medium text-gray-900 dark:text-white">{{ stats.verified_users }} verified accounts</div>
                                         <div class="text-gray-600 dark:text-gray-400">out of {{ stats.total_users }} total users</div>
                                     </div>
-                                    
+
                                     <div class="text-sm">
-                                        <div class="font-medium text-gray-900 dark:text-white">{{ Math.round((stats.verified_users / stats.total_users) * 100) }}% verification rate</div>
+                                        <div class="font-medium text-gray-900 dark:text-white">
+                                            {{ Math.round((stats.verified_users / stats.total_users) * 100) }}% verification rate
+                                        </div>
                                         <div class="text-gray-600 dark:text-gray-400">for email verification</div>
                                     </div>
                                 </div>

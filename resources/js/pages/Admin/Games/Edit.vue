@@ -1,369 +1,391 @@
 <template>
-  <AppLayout title="Edit Game">
-    <div class="py-12">
-      <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white overflow-hidden shadow-xl sm:rounded-lg">
-          <div class="p-6 sm:px-20 bg-white border-b border-gray-200">
-            <div class="flex items-center justify-between">
-              <div>
-                <h2 class="text-2xl font-semibold text-gray-900">Edit Game: {{ game.name }}</h2>
-                <p class="mt-1 text-sm text-gray-600">Update the game metadata and configuration.</p>
-              </div>
-              <Link :href="route('admin.games')" class="inline-flex items-center px-4 py-2 bg-gray-800 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-gray-700 focus:bg-gray-700 active:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                ← Back to Games
-              </Link>
+    <AppLayout title="Edit Game">
+        <div class="py-12">
+            <div class="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                <div class="overflow-hidden bg-white shadow-xl sm:rounded-lg">
+                    <div class="border-b border-gray-200 bg-white p-6 sm:px-20">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h2 class="text-2xl font-semibold text-gray-900">Edit Game: {{ game.name }}</h2>
+                                <p class="mt-1 text-sm text-gray-600">Update the game metadata and configuration.</p>
+                            </div>
+                            <Link
+                                :href="route('admin.games')"
+                                class="inline-flex items-center rounded-md border border-transparent bg-gray-800 px-4 py-2 text-xs font-semibold tracking-widest text-white uppercase transition duration-150 ease-in-out hover:bg-gray-700 focus:bg-gray-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none active:bg-gray-900"
+                            >
+                                ← Back to Games
+                            </Link>
+                        </div>
+                    </div>
+
+                    <div class="p-6 sm:px-20">
+                        <form @submit.prevent="submit">
+                            <!-- Basic Information Section -->
+                            <div class="mb-8">
+                                <h3 class="mb-4 text-lg font-medium text-gray-900">Basic Information</h3>
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    <div>
+                                        <label for="name" class="block text-sm font-medium text-gray-700">Game Name</label>
+                                        <input
+                                            id="name"
+                                            v-model="form.name"
+                                            type="text"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.name }"
+                                            required
+                                        />
+                                        <div v-if="form.errors.name" class="mt-2 text-sm text-red-600">{{ form.errors.name }}</div>
+                                    </div>
+
+                                    <div>
+                                        <label for="slug" class="block text-sm font-medium text-gray-700">Slug (URL-friendly name)</label>
+                                        <input
+                                            id="slug"
+                                            v-model="form.slug"
+                                            type="text"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.slug }"
+                                        />
+                                        <div v-if="form.errors.slug" class="mt-2 text-sm text-red-600">{{ form.errors.slug }}</div>
+                                        <p class="mt-1 text-xs text-gray-500">Leave empty to auto-generate from name</p>
+                                    </div>
+
+                                    <div class="md:col-span-2">
+                                        <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                                        <textarea
+                                            id="description"
+                                            v-model="form.description"
+                                            rows="3"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.description }"
+                                            required
+                                        ></textarea>
+                                        <div v-if="form.errors.description" class="mt-2 text-sm text-red-600">{{ form.errors.description }}</div>
+                                    </div>
+
+                                    <div class="md:col-span-2">
+                                        <label for="how_to_play" class="block text-sm font-medium text-gray-700">How to Play</label>
+                                        <textarea
+                                            id="how_to_play"
+                                            v-model="form.how_to_play"
+                                            rows="4"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.how_to_play }"
+                                        ></textarea>
+                                        <div v-if="form.errors.how_to_play" class="mt-2 text-sm text-red-600">{{ form.errors.how_to_play }}</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Game Settings Section -->
+                            <div class="mb-8">
+                                <h3 class="mb-4 text-lg font-medium text-gray-900">Game Settings</h3>
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+                                    <div>
+                                        <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+                                        <select
+                                            id="category"
+                                            v-model="form.category"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.category }"
+                                        >
+                                            <option value="">Select Category</option>
+                                            <option value="puzzle">Puzzle</option>
+                                            <option value="action">Action</option>
+                                            <option value="adventure">Adventure</option>
+                                            <option value="strategy">Strategy</option>
+                                            <option value="casual">Casual</option>
+                                            <option value="arcade">Arcade</option>
+                                        </select>
+                                        <div v-if="form.errors.category" class="mt-2 text-sm text-red-600">{{ form.errors.category }}</div>
+                                    </div>
+
+                                    <div>
+                                        <label for="difficulty" class="block text-sm font-medium text-gray-700">Difficulty</label>
+                                        <select
+                                            id="difficulty"
+                                            v-model="form.difficulty"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.difficulty }"
+                                        >
+                                            <option value="">Select Difficulty</option>
+                                            <option value="easy">Easy</option>
+                                            <option value="medium">Medium</option>
+                                            <option value="hard">Hard</option>
+                                            <option value="expert">Expert</option>
+                                        </select>
+                                        <div v-if="form.errors.difficulty" class="mt-2 text-sm text-red-600">{{ form.errors.difficulty }}</div>
+                                    </div>
+
+                                    <div>
+                                        <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                                        <select
+                                            id="status"
+                                            v-model="form.status"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.status }"
+                                        >
+                                            <option value="draft">Draft</option>
+                                            <option value="published">Published</option>
+                                            <option value="archived">Archived</option>
+                                        </select>
+                                        <div v-if="form.errors.status" class="mt-2 text-sm text-red-600">{{ form.errors.status }}</div>
+                                    </div>
+
+                                    <div>
+                                        <label for="min_players" class="block text-sm font-medium text-gray-700">Minimum Players</label>
+                                        <input
+                                            id="min_players"
+                                            v-model.number="form.min_players"
+                                            type="number"
+                                            min="1"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.min_players }"
+                                        />
+                                        <div v-if="form.errors.min_players" class="mt-2 text-sm text-red-600">{{ form.errors.min_players }}</div>
+                                    </div>
+
+                                    <div>
+                                        <label for="max_players" class="block text-sm font-medium text-gray-700">Maximum Players</label>
+                                        <input
+                                            id="max_players"
+                                            v-model.number="form.max_players"
+                                            type="number"
+                                            min="1"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.max_players }"
+                                        />
+                                        <div v-if="form.errors.max_players" class="mt-2 text-sm text-red-600">{{ form.errors.max_players }}</div>
+                                    </div>
+
+                                    <div>
+                                        <label for="estimated_duration" class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
+                                        <input
+                                            id="estimated_duration"
+                                            v-model.number="form.estimated_duration"
+                                            type="number"
+                                            min="1"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.estimated_duration }"
+                                        />
+                                        <div v-if="form.errors.estimated_duration" class="mt-2 text-sm text-red-600">
+                                            {{ form.errors.estimated_duration }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Media and Files Section -->
+                            <div class="mb-8">
+                                <h3 class="mb-4 text-lg font-medium text-gray-900">Media and Files</h3>
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    <div>
+                                        <label for="thumbnail_url" class="block text-sm font-medium text-gray-700">Thumbnail URL</label>
+                                        <input
+                                            id="thumbnail_url"
+                                            v-model="form.thumbnail_url"
+                                            type="url"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.thumbnail_url }"
+                                        />
+                                        <div v-if="form.errors.thumbnail_url" class="mt-2 text-sm text-red-600">{{ form.errors.thumbnail_url }}</div>
+                                    </div>
+
+                                    <div>
+                                        <label for="featured_image_url" class="block text-sm font-medium text-gray-700">Featured Image URL</label>
+                                        <input
+                                            id="featured_image_url"
+                                            v-model="form.featured_image_url"
+                                            type="url"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.featured_image_url }"
+                                        />
+                                        <div v-if="form.errors.featured_image_url" class="mt-2 text-sm text-red-600">
+                                            {{ form.errors.featured_image_url }}
+                                        </div>
+                                    </div>
+
+                                    <div class="md:col-span-2">
+                                        <label for="javascript_file_url" class="block text-sm font-medium text-gray-700">JavaScript File URL</label>
+                                        <input
+                                            id="javascript_file_url"
+                                            v-model="form.javascript_file_url"
+                                            type="url"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.javascript_file_url }"
+                                            required
+                                        />
+                                        <div v-if="form.errors.javascript_file_url" class="mt-2 text-sm text-red-600">
+                                            {{ form.errors.javascript_file_url }}
+                                        </div>
+                                        <p class="mt-1 text-xs text-gray-500">URL to the JavaScript file containing the game code</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Additional Settings Section -->
+                            <div class="mb-8">
+                                <h3 class="mb-4 text-lg font-medium text-gray-900">Additional Settings</h3>
+                                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                    <div>
+                                        <label for="tags" class="block text-sm font-medium text-gray-700">Tags (comma-separated)</label>
+                                        <input
+                                            id="tags"
+                                            v-model="form.tags_string"
+                                            type="text"
+                                            placeholder="multiplayer, strategy, turn-based"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.tags_string }"
+                                        />
+                                        <div v-if="form.errors.tags_string" class="mt-2 text-sm text-red-600">{{ form.errors.tags_string }}</div>
+                                    </div>
+
+                                    <div>
+                                        <label for="controls" class="block text-sm font-medium text-gray-700">Controls (comma-separated)</label>
+                                        <input
+                                            id="controls"
+                                            v-model="form.controls_string"
+                                            type="text"
+                                            placeholder="mouse, keyboard, touch"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.controls_string }"
+                                        />
+                                        <div v-if="form.errors.controls_string" class="mt-2 text-sm text-red-600">
+                                            {{ form.errors.controls_string }}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label for="age_rating" class="block text-sm font-medium text-gray-700">Age Rating</label>
+                                        <select
+                                            id="age_rating"
+                                            v-model="form.age_rating"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                            :class="{ 'border-red-300': form.errors.age_rating }"
+                                        >
+                                            <option value="">Select Age Rating</option>
+                                            <option value="E">Everyone</option>
+                                            <option value="E10+">Everyone 10+</option>
+                                            <option value="T">Teen</option>
+                                            <option value="M">Mature</option>
+                                        </select>
+                                        <div v-if="form.errors.age_rating" class="mt-2 text-sm text-red-600">{{ form.errors.age_rating }}</div>
+                                    </div>
+
+                                    <div class="flex items-center">
+                                        <input
+                                            id="is_featured"
+                                            v-model="form.is_featured"
+                                            type="checkbox"
+                                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <label for="is_featured" class="ml-2 block text-sm text-gray-900"> Featured Game </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="flex items-center justify-end space-x-4">
+                                <Link
+                                    :href="route('admin.games')"
+                                    class="inline-flex items-center rounded-md border border-transparent bg-gray-300 px-4 py-2 text-xs font-semibold tracking-widest text-gray-700 uppercase transition duration-150 ease-in-out hover:bg-gray-400 focus:bg-gray-400 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:outline-none active:bg-gray-500"
+                                >
+                                    Cancel
+                                </Link>
+                                <button
+                                    type="submit"
+                                    :disabled="form.processing"
+                                    class="inline-flex items-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-xs font-semibold tracking-widest text-white uppercase transition duration-150 ease-in-out hover:bg-indigo-700 focus:bg-indigo-700 focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 focus:outline-none active:bg-indigo-900 disabled:opacity-25"
+                                >
+                                    <span v-if="form.processing">Updating...</span>
+                                    <span v-else>Update Game</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
-          </div>
-
-          <div class="p-6 sm:px-20">
-            <form @submit.prevent="submit">
-              <!-- Basic Information Section -->
-              <div class="mb-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700">Game Name</label>
-                    <input
-                      id="name"
-                      v-model="form.name"
-                      type="text"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.name }"
-                      required
-                    />
-                    <div v-if="form.errors.name" class="mt-2 text-sm text-red-600">{{ form.errors.name }}</div>
-                  </div>
-
-                  <div>
-                    <label for="slug" class="block text-sm font-medium text-gray-700">Slug (URL-friendly name)</label>
-                    <input
-                      id="slug"
-                      v-model="form.slug"
-                      type="text"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.slug }"
-                    />
-                    <div v-if="form.errors.slug" class="mt-2 text-sm text-red-600">{{ form.errors.slug }}</div>
-                    <p class="mt-1 text-xs text-gray-500">Leave empty to auto-generate from name</p>
-                  </div>
-
-                  <div class="md:col-span-2">
-                    <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-                    <textarea
-                      id="description"
-                      v-model="form.description"
-                      rows="3"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.description }"
-                      required
-                    ></textarea>
-                    <div v-if="form.errors.description" class="mt-2 text-sm text-red-600">{{ form.errors.description }}</div>
-                  </div>
-
-                  <div class="md:col-span-2">
-                    <label for="how_to_play" class="block text-sm font-medium text-gray-700">How to Play</label>
-                    <textarea
-                      id="how_to_play"
-                      v-model="form.how_to_play"
-                      rows="4"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.how_to_play }"
-                    ></textarea>
-                    <div v-if="form.errors.how_to_play" class="mt-2 text-sm text-red-600">{{ form.errors.how_to_play }}</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Game Settings Section -->
-              <div class="mb-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Game Settings</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
-                    <select
-                      id="category"
-                      v-model="form.category"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.category }"
-                    >
-                      <option value="">Select Category</option>
-                      <option value="puzzle">Puzzle</option>
-                      <option value="action">Action</option>
-                      <option value="adventure">Adventure</option>
-                      <option value="strategy">Strategy</option>
-                      <option value="casual">Casual</option>
-                      <option value="arcade">Arcade</option>
-                    </select>
-                    <div v-if="form.errors.category" class="mt-2 text-sm text-red-600">{{ form.errors.category }}</div>
-                  </div>
-
-                  <div>
-                    <label for="difficulty" class="block text-sm font-medium text-gray-700">Difficulty</label>
-                    <select
-                      id="difficulty"
-                      v-model="form.difficulty"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.difficulty }"
-                    >
-                      <option value="">Select Difficulty</option>
-                      <option value="easy">Easy</option>
-                      <option value="medium">Medium</option>
-                      <option value="hard">Hard</option>
-                      <option value="expert">Expert</option>
-                    </select>
-                    <div v-if="form.errors.difficulty" class="mt-2 text-sm text-red-600">{{ form.errors.difficulty }}</div>
-                  </div>
-
-                  <div>
-                    <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
-                    <select
-                      id="status"
-                      v-model="form.status"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.status }"
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="published">Published</option>
-                      <option value="archived">Archived</option>
-                    </select>
-                    <div v-if="form.errors.status" class="mt-2 text-sm text-red-600">{{ form.errors.status }}</div>
-                  </div>
-
-                  <div>
-                    <label for="min_players" class="block text-sm font-medium text-gray-700">Minimum Players</label>
-                    <input
-                      id="min_players"
-                      v-model.number="form.min_players"
-                      type="number"
-                      min="1"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.min_players }"
-                    />
-                    <div v-if="form.errors.min_players" class="mt-2 text-sm text-red-600">{{ form.errors.min_players }}</div>
-                  </div>
-
-                  <div>
-                    <label for="max_players" class="block text-sm font-medium text-gray-700">Maximum Players</label>
-                    <input
-                      id="max_players"
-                      v-model.number="form.max_players"
-                      type="number"
-                      min="1"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.max_players }"
-                    />
-                    <div v-if="form.errors.max_players" class="mt-2 text-sm text-red-600">{{ form.errors.max_players }}</div>
-                  </div>
-
-                  <div>
-                    <label for="estimated_duration" class="block text-sm font-medium text-gray-700">Duration (minutes)</label>
-                    <input
-                      id="estimated_duration"
-                      v-model.number="form.estimated_duration"
-                      type="number"
-                      min="1"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.estimated_duration }"
-                    />
-                    <div v-if="form.errors.estimated_duration" class="mt-2 text-sm text-red-600">{{ form.errors.estimated_duration }}</div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Media and Files Section -->
-              <div class="mb-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Media and Files</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label for="thumbnail_url" class="block text-sm font-medium text-gray-700">Thumbnail URL</label>
-                    <input
-                      id="thumbnail_url"
-                      v-model="form.thumbnail_url"
-                      type="url"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.thumbnail_url }"
-                    />
-                    <div v-if="form.errors.thumbnail_url" class="mt-2 text-sm text-red-600">{{ form.errors.thumbnail_url }}</div>
-                  </div>
-
-                  <div>
-                    <label for="featured_image_url" class="block text-sm font-medium text-gray-700">Featured Image URL</label>
-                    <input
-                      id="featured_image_url"
-                      v-model="form.featured_image_url"
-                      type="url"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.featured_image_url }"
-                    />
-                    <div v-if="form.errors.featured_image_url" class="mt-2 text-sm text-red-600">{{ form.errors.featured_image_url }}</div>
-                  </div>
-
-                  <div class="md:col-span-2">
-                    <label for="javascript_file_url" class="block text-sm font-medium text-gray-700">JavaScript File URL</label>
-                    <input
-                      id="javascript_file_url"
-                      v-model="form.javascript_file_url"
-                      type="url"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.javascript_file_url }"
-                      required
-                    />
-                    <div v-if="form.errors.javascript_file_url" class="mt-2 text-sm text-red-600">{{ form.errors.javascript_file_url }}</div>
-                    <p class="mt-1 text-xs text-gray-500">URL to the JavaScript file containing the game code</p>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Additional Settings Section -->
-              <div class="mb-8">
-                <h3 class="text-lg font-medium text-gray-900 mb-4">Additional Settings</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label for="tags" class="block text-sm font-medium text-gray-700">Tags (comma-separated)</label>
-                    <input
-                      id="tags"
-                      v-model="form.tags_string"
-                      type="text"
-                      placeholder="multiplayer, strategy, turn-based"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.tags_string }"
-                    />
-                    <div v-if="form.errors.tags_string" class="mt-2 text-sm text-red-600">{{ form.errors.tags_string }}</div>
-                  </div>
-
-                  <div>
-                    <label for="controls" class="block text-sm font-medium text-gray-700">Controls (comma-separated)</label>
-                    <input
-                      id="controls"
-                      v-model="form.controls_string"
-                      type="text"
-                      placeholder="mouse, keyboard, touch"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.controls_string }"
-                    />
-                    <div v-if="form.errors.controls_string" class="mt-2 text-sm text-red-600">{{ form.errors.controls_string }}</div>
-                  </div>
-
-                  <div>
-                    <label for="age_rating" class="block text-sm font-medium text-gray-700">Age Rating</label>
-                    <select
-                      id="age_rating"
-                      v-model="form.age_rating"
-                      class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                      :class="{ 'border-red-300': form.errors.age_rating }"
-                    >
-                      <option value="">Select Age Rating</option>
-                      <option value="E">Everyone</option>
-                      <option value="E10+">Everyone 10+</option>
-                      <option value="T">Teen</option>
-                      <option value="M">Mature</option>
-                    </select>
-                    <div v-if="form.errors.age_rating" class="mt-2 text-sm text-red-600">{{ form.errors.age_rating }}</div>
-                  </div>
-
-                  <div class="flex items-center">
-                    <input
-                      id="is_featured"
-                      v-model="form.is_featured"
-                      type="checkbox"
-                      class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                    />
-                    <label for="is_featured" class="ml-2 block text-sm text-gray-900">
-                      Featured Game
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Form Actions -->
-              <div class="flex items-center justify-end space-x-4">
-                <Link :href="route('admin.games')" class="inline-flex items-center px-4 py-2 bg-gray-300 border border-transparent rounded-md font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-400 focus:bg-gray-400 active:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition ease-in-out duration-150">
-                  Cancel
-                </Link>
-                <button
-                  type="submit"
-                  :disabled="form.processing"
-                  class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150 disabled:opacity-25"
-                >
-                  <span v-if="form.processing">Updating...</span>
-                  <span v-else>Update Game</span>
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
-      </div>
-    </div>
-  </AppLayout>
+    </AppLayout>
 </template>
 
 <script setup lang="ts">
-import { Link, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
+import { Link, useForm } from '@inertiajs/vue3';
 
 interface Game {
-  id: number;
-  name: string;
-  slug: string;
-  description: string;
-  how_to_play?: string;
-  category?: string;
-  difficulty?: string;
-  status: string;
-  min_players: number;
-  max_players: number;
-  estimated_duration?: number;
-  thumbnail_url?: string;
-  featured_image_url?: string;
-  javascript_file_url: string;
-  tags: string[];
-  controls: string[];
-  age_rating?: string;
-  is_featured: boolean;
+    id: number;
+    name: string;
+    slug: string;
+    description: string;
+    how_to_play?: string;
+    category?: string;
+    difficulty?: string;
+    status: string;
+    min_players: number;
+    max_players: number;
+    estimated_duration?: number;
+    thumbnail_url?: string;
+    featured_image_url?: string;
+    javascript_file_url: string;
+    tags: string[];
+    controls: string[];
+    age_rating?: string;
+    is_featured: boolean;
 }
 
 interface Props {
-  game: Game;
+    game: Game;
 }
 
 const props = defineProps<Props>();
 
 const form = useForm({
-  name: props.game.name,
-  slug: props.game.slug,
-  description: props.game.description,
-  how_to_play: props.game.how_to_play || '',
-  category: props.game.category || '',
-  difficulty: props.game.difficulty || '',
-  status: props.game.status,
-  min_players: props.game.min_players,
-  max_players: props.game.max_players,
-  estimated_duration: props.game.estimated_duration || null,
-  thumbnail_url: props.game.thumbnail_url || '',
-  featured_image_url: props.game.featured_image_url || '',
-  javascript_file_url: props.game.javascript_file_url,
-  tags_string: props.game.tags ? props.game.tags.join(', ') : '',
-  controls_string: props.game.controls ? props.game.controls.join(', ') : '',
-  age_rating: props.game.age_rating || '',
-  is_featured: props.game.is_featured,
+    name: props.game.name,
+    slug: props.game.slug,
+    description: props.game.description,
+    how_to_play: props.game.how_to_play || '',
+    category: props.game.category || '',
+    difficulty: props.game.difficulty || '',
+    status: props.game.status,
+    min_players: props.game.min_players,
+    max_players: props.game.max_players,
+    estimated_duration: props.game.estimated_duration || null,
+    thumbnail_url: props.game.thumbnail_url || '',
+    featured_image_url: props.game.featured_image_url || '',
+    javascript_file_url: props.game.javascript_file_url,
+    tags_string: props.game.tags ? props.game.tags.join(', ') : '',
+    controls_string: props.game.controls ? props.game.controls.join(', ') : '',
+    age_rating: props.game.age_rating || '',
+    is_featured: props.game.is_featured,
 });
 
 const submit = () => {
-  // Convert comma-separated strings to arrays
-  const formData = {
-    ...form.data(),
-    tags: form.tags_string ? form.tags_string.split(',').map(tag => tag.trim()).filter(tag => tag) : [],
-    controls: form.controls_string ? form.controls_string.split(',').map(control => control.trim()).filter(control => control) : [],
-  };
+    // Convert comma-separated strings to arrays
+    const formData = {
+        ...form.data(),
+        tags: form.tags_string
+            ? form.tags_string
+                  .split(',')
+                  .map((tag) => tag.trim())
+                  .filter((tag) => tag)
+            : [],
+        controls: form.controls_string
+            ? form.controls_string
+                  .split(',')
+                  .map((control) => control.trim())
+                  .filter((control) => control)
+            : [],
+    };
 
-  // Remove the string versions from the data being sent
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { tags_string, controls_string, ...finalData } = formData;
+    // Remove the string versions from the data being sent
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { tags_string, controls_string, ...finalData } = formData;
 
-  form.transform(() => finalData).put(route('admin.games.update', props.game.id), {
-    onSuccess: () => {
-      // Game updated successfully
-    },
-  });
+    form.transform(() => finalData).put(route('admin.games.update', props.game.id), {
+        onSuccess: () => {
+            // Game updated successfully
+        },
+    });
 };
 </script>
