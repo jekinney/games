@@ -9,12 +9,12 @@ defineProps<{
 </script>
 
 <template>
-    <div class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div class="flex min-h-screen flex-col bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <MainNavigation />
         
         <FlashMessage />
         
-        <main>
+        <main class="flex-1">
             <slot />
         </main>
         

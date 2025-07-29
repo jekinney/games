@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Test Game</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script>
+        // Initialize Pusher with correct Reverb configuration
+        const pusher = new Pusher('h1sh3zmuownfn2zuo48g', {
+            wsHost: '127.0.0.1',
+            wsPort: 8080,
+            wssPort: 8080,
+            forceTLS: false,
+            enabledTransports: ['ws', 'wss'],
+            disableStats: true
+        });
+        
+        // Simple Echo-like wrapper for Reverb
+        window.Echo = {
+            pusher: pusher,
+            channels: {},
+            
+            channel(name) {
+                if (!this.channels[name]) {
+                    this.channels[name] = pusher.subscribe(name);
+                    
+                    // Add simplified methods for server events only
+                    this.channels[name].listen = (eventName, callback) => {
+                        console.log(`Listening for server event ${eventName} on channel ${name}`);
+                        this.channels[name].bind(eventName, callback);
+                    };
+                }
+                return this.channels[name];
+            },
+            
+            leave(name) {
+                if (this.channels[name]) {
+                    pusher.unsubscribe(name);
+                    delete this.channels[name];
+                }
+            }
+        };
+        
+        // Handle connection events
+        pusher.connection.bind('connected', () => {
+            console.log('Connected to Reverb WebSocket server');
+        });
+        
+        pusher.connection.bind('error', (err) => {
+            console.error('Reverb connection error:', err);
+        });
+        
+        pusher.connection.bind('disconnected', () => {
+            console.log('Disconnected from Reverb WebSocket server');
+        });
+    </script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: white;
+        }
+
+        .game-container {
+            text-align: center;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .game-info {
+            margin-bottom: 20px;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .score-item {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px 20px;
+            border-radius: 10px;
+            backdrop-filter: blur(10px);
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 120px);
+            grid-gap: 15px;
+            justify-content: center;
+            margin: 20px auto;
+            max-width: 600px;
+        }
+
+        .memory-card {
+            width: 120px;
+            height: 120px;
+            border-radius: 15px;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            cursor: pointer;
+            transform: perspective(1000px) rotateY(180deg);
+            transition: transform 0.6s;
+            position: relative;
+            transform-style: preserve-3d;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .memory-card.flipped {
+            transform: perspective(1000px) rotateY(0deg);
+        }
+
+        .memory-card.matched {
+            background: linear-gradient(45deg, #2ecc71, #27ae60);
+            cursor: default;
+        }
+
+        .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(45deg, #3742fa, #2f3542);
+            border-radius: 15px;
+            font-size: 24px;
+        }
+
+        .card-front {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            transform: rotateY(180deg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            border-radius: 15px;
+        }
+
+        .controls {
+            margin: 20px 0;
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 0 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .game-over {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 20px 0;
+            backdrop-filter: blur(10px);
+        }
+
+        @media (max-width: 600px) {
+            .game-board {
+                grid-template-columns: repeat(4, 80px);
+                grid-gap: 10px;
+            }
+
+            .memory-card {
+                width: 80px;
+                height: 80px;
+                font-size: 32px;
+            }
+
+            .score-board {
+                gap: 15px;
+            }
+        }
+
+        /* Real-time notification animations */
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOut {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>🧠 Memory Test Game</h1>
+        
+        <div class="score-board">
+            <div class="score-item">
+                <div>Score</div>
+                <div id="score">0</div>
+            </div>
+            <div class="score-item">
+                <div>Moves</div>
+                <div id="moves">0</div>
+            </div>
+            <div class="score-item">
+                <div>Time</div>
+                <div id="timer">00:00</div>
+            </div>
+            <div class="score-item">
+                <div>Level</div>
+                <div id="level">1</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="startGame()">Start Game</button>
+            <button class="btn" onclick="resetGame()">Reset</button>
+            <button class="btn" onclick="showLeaderboard()">Leaderboard</button>
+        </div>
+
+        <div class="game-board" id="gameBoard"></div>
+
+        <div id="gameOver" class="game-over" style="display: none;">
+            <h2>🎉 Congratulations!</h2>
+            <p>You completed the level!</p>
+            <p>Your score: <span id="finalScore">0</span></p>
+            <button class="btn" onclick="nextLevel()">Next Level</button>
+            <button class="btn" onclick="submitScore()">Submit Score</button>
+        </div>
+    </div>
+
+    <script>
+        class MemoryGame {
+            constructor() {
+                this.cards = [];
+                this.flippedCards = [];
+                this.matches = 0;
+                this.moves = 0;
+                this.score = 0;
+                this.level = 1;
+                this.timer = 0;
+                this.timerInterval = null;
+                this.gameStarted = false;
+                this.gameStartTime = null;
+                
+                // Card symbols for different levels
+                this.symbols = ['🎮', '🎯', '🎲', '🎪', '🎨', '🎭', '🎪', '🎸', '🎺', '🎻', '🥁', '🎤', '🎧', '📱', '💻', '🖥️'];
+            }
+
+            startGame() {
+                this.gameStarted = true;
+                this.gameStartTime = Date.now();
+                
+                // Initialize simple WebSocket connection for listening to events
+                this.leaderboardChannel = window.Echo?.channel(`memory-test-game-leaderboard`);
+                if (this.leaderboardChannel) {
+                    console.log('Connected to real-time leaderboard updates');
+                    
+                    // Listen for real-time score submissions from other players
+                    this.leaderboardChannel.listen('ScoreSubmitted', (data) => {
+                        console.log('Real-time score update:', data);
+                        this.displayRealTimeUpdate(data);
+                    });
+                    
+                    // Listen for leaderboard position changes
+                    this.leaderboardChannel.listen('LeaderboardUpdated', (data) => {
+                        console.log('Leaderboard updated:', data);
+                        this.updateLeaderboardDisplay(data);
+                    });
+                }
+                
+                this.createBoard();
+                this.startTimer();
+                document.getElementById('gameOver').style.display = 'none';
+            }
+
+            createBoard() {
+                const board = document.getElementById('gameBoard');
+                board.innerHTML = '';
+                
+                // Number of pairs increases with level
+                const pairs = Math.min(8, 4 + Math.floor(this.level / 2));
+                const totalCards = pairs * 2;
+                
+                // Create pairs of symbols
+                this.cards = [];
+                for (let i = 0; i < pairs; i++) {
+                    this.cards.push(this.symbols[i], this.symbols[i]);
+                }
+                
+                // Shuffle cards
+                this.shuffle(this.cards);
+                
+                // Create card elements
+                this.cards.forEach((symbol, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'memory-card';
+                    card.dataset.symbol = symbol;
+                    card.dataset.index = index;
+                    card.onclick = () => this.flipCard(card);
+                    
+                    card.innerHTML = `
+                        <div class="card-back">?</div>
+                        <div class="card-front">${symbol}</div>
+                    `;
+                    
+                    board.appendChild(card);
+                });
+                
+                this.matches = 0;
+                this.flippedCards = [];
+            }
+
+            shuffle(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+            }
+
+            flipCard(card) {
+                if (!this.gameStarted || card.classList.contains('flipped') || card.classList.contains('matched') || this.flippedCards.length >= 2) {
+                    return;
+                }
+
+                card.classList.add('flipped');
+                this.flippedCards.push(card);
+
+                if (this.flippedCards.length === 2) {
+                    this.moves++;
+                    document.getElementById('moves').textContent = this.moves;
+                    this.checkMatch();
+                }
+            }
+
+            checkMatch() {
+                const [card1, card2] = this.flippedCards;
+                
+                if (card1.dataset.symbol === card2.dataset.symbol) {
+                    // Match found
+                    setTimeout(() => {
+                        card1.classList.add('matched');
+                        card2.classList.add('matched');
+                        this.flippedCards = [];
+                        this.matches++;
+                        
+                        // Calculate score
+                        const timeBonus = Math.max(0, 1000 - this.timer * 10);
+                        const moveBonus = Math.max(0, 500 - this.moves * 20);
+                        this.score += 100 + timeBonus + moveBonus;
+                        document.getElementById('score').textContent = this.score;
+                        
+                        this.checkWin();
+                    }, 500);
+                } else {
+                    // No match
+                    setTimeout(() => {
+                        card1.classList.remove('flipped');
+                        card2.classList.remove('flipped');
+                        this.flippedCards = [];
+                    }, 1000);
+                }
+            }
+
+            checkWin() {
+                if (this.matches === this.cards.length / 2) {
+                    this.gameStarted = false;
+                    clearInterval(this.timerInterval);
+                    
+                    // Level completion bonus
+                    this.score += this.level * 500;
+                    document.getElementById('finalScore').textContent = this.score;
+                    document.getElementById('score').textContent = this.score;
+                    document.getElementById('gameOver').style.display = 'block';
+                }
+            }
+
+            // Real-time WebSocket event handlers
+            displayRealTimeUpdate(data) {
+                // Create a temporary notification for real-time score updates
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    background: linear-gradient(45deg, #4facfe, #00f2fe);
+                    color: white;
+                    padding: 15px 20px;
+                    border-radius: 10px;
+                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                    z-index: 1000;
+                    font-weight: bold;
+                    animation: slideIn 0.3s ease-out;
+                `;
+                notification.innerHTML = `
+                    🎉 ${data.user_name || 'Player'} scored ${data.score.toLocaleString()} points!
+                    ${data.level_reached ? `(Level ${data.level_reached})` : ''}
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Auto-remove after 4 seconds
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.style.animation = 'slideOut 0.3s ease-in';
+                        setTimeout(() => notification.remove(), 300);
+                    }
+                }, 4000);
+            }
+
+            updateLeaderboardDisplay(data) {
+                // Log leaderboard updates - could be used to update a live leaderboard sidebar
+                console.log('Live leaderboard update:', data);
+                
+                // If there's a leaderboard display element, update it
+                const leaderboardElement = document.getElementById('liveLeaderboard');
+                if (leaderboardElement && data.topScores) {
+                    this.renderLiveLeaderboard(data.topScores);
+                }
+            }
+
+            renderLiveLeaderboard(topScores) {
+                const leaderboardElement = document.getElementById('liveLeaderboard');
+                if (!leaderboardElement) return;
+                
+                leaderboardElement.innerHTML = `
+                    <h3 style="margin: 0 0 10px 0; color: #333;">🏆 Live Leaderboard</h3>
+                    ${topScores.slice(0, 5).map((score, index) => `
+                        <div style="display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid #eee;">
+                            <span>${index + 1}. ${score.user_name || 'Anonymous'}</span>
+                            <span>${score.score.toLocaleString()}</span>
+                        </div>
+                    `).join('')}
+                `;
+            }
+
+            nextLevel() {
+                this.level++;
+                document.getElementById('level').textContent = this.level;
+                this.startGame();
+            }
+
+            resetGame() {
+                // Clean up WebSocket connections
+                if (this.leaderboardChannel && window.Echo) {
+                    window.Echo.leave(`memory-test-game-leaderboard`);
+                    this.leaderboardChannel = null;
+                }
+                
+                this.level = 1;
+                this.score = 0;
+                this.moves = 0;
+                this.timer = 0;
+                this.gameStarted = false;
+                
+                clearInterval(this.timerInterval);
+                
+                document.getElementById('level').textContent = this.level;
+                document.getElementById('score').textContent = this.score;
+                document.getElementById('moves').textContent = this.moves;
+                document.getElementById('timer').textContent = '00:00';
+                document.getElementById('gameOver').style.display = 'none';
+                document.getElementById('gameBoard').innerHTML = '';
+            }
+
+            startTimer() {
+                this.timer = 0;
+                this.timerInterval = setInterval(() => {
+                    this.timer++;
+                    const minutes = Math.floor(this.timer / 60);
+                    const seconds = this.timer % 60;
+                    document.getElementById('timer').textContent = 
+                        `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }, 1000);
+            }
+
+            async submitScore() {
+                try {
+                    // Simple WebSocket connection to listen for events
+                    if (!this.leaderboardChannel) {
+                        this.leaderboardChannel = window.Echo?.channel(`memory-test-game-leaderboard`);
+                        
+                        if (this.leaderboardChannel) {
+                            // Listen for score submission events from server
+                            this.leaderboardChannel.listen('ScoreSubmitted', (data) => {
+                                console.log('Real-time score update:', data);
+                            });
+                            console.log('Connected to leaderboard channel for real-time updates');
+                        }
+                    }
+
+                    // Prepare score data
+                    const scoreData = {
+                        score: this.score,
+                        level_reached: this.level,
+                        time_played_seconds: this.timer,
+                        game_data: {
+                            total_cards: this.cards.length,
+                            moves: this.moves,
+                            perfect_matches: this.matches,
+                            start_time: this.gameStartTime,
+                            end_time: Date.now()
+                        }
+                    };
+
+                    // Submit via API - server will broadcast via WebSocket
+                    const response = await fetch('/api/leaderboards/memory-test-game/submit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify(scoreData)
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        alert(`Score submitted successfully! Your rank: #${result.rank || 'N/A'}`);
+                    } else {
+                        alert('Please log in to submit your score!');
+                    }
+                } catch (error) {
+                    console.error('Error submitting score:', error);
+                    alert('Error submitting score. Please try again.');
+                }
+            }
+        }
+
+        // Initialize game
+        const game = new MemoryGame();
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            if (game.leaderboardChannel && window.Echo) {
+                window.Echo.leave(`memory-test-game-leaderboard`);
+            }
+        });
+
+        // Global functions
+        function startGame() {
+            game.startGame();
+        }
+
+        function resetGame() {
+            game.resetGame();
+        }
+
+        function nextLevel() {
+            game.nextLevel();
+        }
+
+        function submitScore() {
+            game.submitScore();
+        }
+
+        function showLeaderboard() {
+            // This would open a modal or redirect to leaderboard page
+            window.open('/games', '_blank');
+        }
+
+        // Make submitScore available globally for testing
+        window.submitScore = (scoreData) => {
+            if (scoreData) {
+                game.score = scoreData.score;
+                game.level = scoreData.level_reached;
+                game.timer = scoreData.time_played_seconds;
+                document.getElementById('finalScore').textContent = game.score;
+                document.getElementById('score').textContent = game.score;
+                document.getElementById('gameOver').style.display = 'block';
+            }
+            return game.submitScore();
+        };
+    </script>
+</body>
+</html>

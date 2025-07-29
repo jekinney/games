@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\GamesController;
-use App\Http\Controllers\LeaderboardController;
+use App\Http\Controllers\Admin\GamesController as AdminGamesController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -13,12 +13,8 @@ Route::get('/', function () {
 
 Route::get('/games', [GamesController::class, 'index'])->name('games');
 
-// Leaderboard routes
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/leaderboards', [LeaderboardController::class, 'index'])->name('leaderboards');
-    Route::get('/leaderboards/{game:slug}', [LeaderboardController::class, 'show'])->name('leaderboards.game');
-    Route::post('/leaderboards/{game:slug}/submit', [LeaderboardController::class, 'submitScore'])->name('leaderboards.submit');
-});
+// Route to serve individual games by slug through controller
+Route::get('/games/{slug}', [GamesController::class, 'show'])->name('games.show');
 
 Route::get('profile', [ProfileController::class, 'index'])
     ->middleware(['auth', 'verified'])
@@ -30,13 +26,8 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     
-    // Game management routes
-    Route::get('/games', [AdminController::class, 'games'])->name('games');
-    Route::get('/games/create', [AdminController::class, 'createGame'])->name('games.create');
-    Route::post('/games', [AdminController::class, 'storeGame'])->name('games.store');
-    Route::get('/games/{game}/edit', [AdminController::class, 'editGame'])->name('games.edit');
-    Route::put('/games/{game}', [AdminController::class, 'updateGame'])->name('games.update');
-    Route::delete('/games/{game}', [AdminController::class, 'destroyGame'])->name('games.destroy');
+    // Game management routes with resource controller
+    Route::resource('games', AdminGamesController::class);
 });
 
 // Keep dashboard for future admin panel use

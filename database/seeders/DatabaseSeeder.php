@@ -16,6 +16,9 @@ class DatabaseSeeder extends Seeder
         // First, seed roles and permissions
         $this->call(RolePermissionSeeder::class);
 
+        // Seed games
+        $this->call(MemoryTestGameSeeder::class);
+
         // Create test users with roles
         $admin = User::factory()->create([
             'name' => 'Admin User',

@@ -115,6 +115,52 @@ class Game extends Model
         $this->update(['average_rating' => $newRating]);
     }
 
+    /**
+     * Get games formatted for public display
+     */
+    public static function getPublicGames()
+    {
+        return static::where('is_active', true)
+            ->orderBy('is_featured', 'desc')
+            ->orderBy('name')
+            ->get()
+            ->map(function ($game) {
+                // Map database slugs to actual file names
+                $fileMapping = [
+                    'memory-test' => 'memory-test-game.html',
+                    // Add more mappings as needed when more games are created
+                ];
+                
+                $filename = $fileMapping[$game->slug] ?? $game->slug . '.html';
+                
+                // Only include games that have actual files
+                if (!file_exists(public_path("games/{$filename}"))) {
+                    return null;
+                }
+                
+                return [
+                    'id' => $game->id,
+                    'name' => $game->name,
+                    'description' => $game->description,
+                    'image' => $game->image_url ?: '/images/games/default-game.png',
+                    'thumbnail' => $game->thumbnail_url ?: '/images/games/thumbnails/default.png',
+                    'url' => '/games/' . $filename,
+                    'category' => ucfirst($game->category),
+                    'difficulty' => ucfirst($game->difficulty),
+                    'playerCount' => $game->min_players === $game->max_players 
+                        ? $game->min_players . ' Player' . ($game->min_players > 1 ? 's' : '')
+                        : $game->min_players . '-' . $game->max_players . ' Players',
+                    'isFeatured' => $game->is_featured,
+                    'playCount' => $game->play_count,
+                    'averageRating' => $game->average_rating,
+                    'estimatedPlayTime' => $game->estimated_play_time,
+                    'tags' => $game->tags,
+                ];
+            })
+            ->filter() // Remove null values
+            ->values(); // Reset array keys
+    }
+
     // Relationships
     public function scores()
     {

@@ -18,6 +18,10 @@ npm-debug.log
 yarn-error.log
 /auth.json
 /.fleet
+
+# Docker
+docker-compose.override.yml
+.dockerignore
 /.idea
 /.nova
 /.vscode

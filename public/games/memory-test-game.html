@@ -4,6 +4,74 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Memory Test Game</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script>
+        // Configure Pusher for Reverb WebSocket connection
+        window.Pusher = Pusher;
+        
+        // Initialize Pusher with correct Reverb configuration
+        const pusher = new Pusher('h1sh3zmuownfn2zuo48g', {
+            wsHost: '127.0.0.1',
+            wsPort: 8080,
+            wssPort: 8080,
+            forceTLS: false,
+            enabledTransports: ['ws', 'wss'],
+            disableStats: true
+        });
+        
+        // Simple Echo-like wrapper for Reverb
+        window.Echo = {
+            pusher: pusher,
+            channels: {},
+            
+            channel(name) {
+                if (!this.channels[name]) {
+                    this.channels[name] = pusher.subscribe(name);
+                    
+                    // Add whisper functionality (client events)
+                    this.channels[name].whisper = (eventName, data) => {
+                        console.log(`Sending client event ${eventName} on channel ${name}:`, data);
+                        // Trigger client event (whisper)
+                        this.channels[name].trigger(`client-${eventName}`, data);
+                    };
+                    
+                    this.channels[name].listenForWhisper = (eventName, callback) => {
+                        console.log(`Listening for client event ${eventName} on channel ${name}`);
+                        // Listen for client events (whispers)
+                        this.channels[name].bind(`client-${eventName}`, callback);
+                    };
+                    
+                    // Add standard listen method
+                    this.channels[name].listen = (eventName, callback) => {
+                        console.log(`Listening for server event ${eventName} on channel ${name}`);
+                        this.channels[name].bind(eventName, callback);
+                    };
+                }
+                return this.channels[name];
+            },
+            
+            leave(name) {
+                if (this.channels[name]) {
+                    pusher.unsubscribe(name);
+                    delete this.channels[name];
+                }
+            }
+        };
+        
+        // Handle connection events
+        pusher.connection.bind('connected', () => {
+            console.log('Connected to Reverb WebSocket server');
+        });
+        
+        pusher.connection.bind('error', (err) => {
+            console.error('Reverb connection error:', err);
+        });
+        
+        pusher.connection.bind('disconnected', () => {
+            console.log('Disconnected from Reverb WebSocket server');
+        });
+    </script>
     <style>
         * {
             margin: 0;
@@ -375,8 +443,106 @@
             gameOver: false,
             isPaused: false,
             isAnimating: false,
-            startTime: null
+            startTime: null,
+            sessionId: null
         };
+
+        // Real-time session management
+        let heartbeatInterval = null;
+
+        async function startGameSession() {
+            try {
+                const response = await fetch('/api/games/memory-test-game/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify({
+                        session_id: gameState.sessionId
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    gameState.sessionId = data.session_id;
+                    console.log('Game session started:', data);
+                    
+                    // Start heartbeat
+                    startHeartbeat();
+                } else {
+                    console.error('Failed to start game session');
+                }
+            } catch (error) {
+                console.error('Error starting game session:', error);
+            }
+        }
+
+        async function endGameSession() {
+            if (!gameState.sessionId) return;
+            
+            try {
+                const timePlayed = gameState.startTime ? Math.floor((Date.now() - gameState.startTime) / 1000) : 0;
+                
+                const response = await fetch('/api/games/memory-test-game/end', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify({
+                        session_id: gameState.sessionId,
+                        score: gameState.score,
+                        time_played: timePlayed
+                    })
+                });
+
+                if (response.ok) {
+                    console.log('Game session ended');
+                    stopHeartbeat();
+                    gameState.sessionId = null;
+                } else {
+                    console.error('Failed to end game session');
+                }
+            } catch (error) {
+                console.error('Error ending game session:', error);
+            }
+        }
+
+        async function sendHeartbeat() {
+            if (!gameState.sessionId) return;
+            
+            try {
+                const response = await fetch('/api/games/memory-test-game/heartbeat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                    },
+                    body: JSON.stringify({
+                        session_id: gameState.sessionId
+                    })
+                });
+
+                if (!response.ok) {
+                    console.error('Heartbeat failed');
+                }
+            } catch (error) {
+                console.error('Heartbeat error:', error);
+            }
+        }
+
+        function startHeartbeat() {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+            heartbeatInterval = setInterval(sendHeartbeat, 30000); // Every 30 seconds
+        }
+
+        function stopHeartbeat() {
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+            }
+        }
 
         // Game symbols
         const symbols = ['🎮', '🎯', '🎪', '🎨', '🎭', '🎺', '🎸', '🎹', '🎲', '🃏', '🎳', '🎱', '🏆', '🏅', '🏀', '⚽', '🎾', '🏈', '🏐', '🏓'];
@@ -472,6 +638,9 @@
             renderCards();
             updateButtons();
             showMessage('Game Started! Find the matching pairs!', 'success');
+            
+            // Start real-time session
+            startGameSession();
         }
 
         function pauseGame() {
@@ -481,6 +650,11 @@
         }
 
         function resetGame() {
+            // End current session if active
+            if (gameState.sessionId) {
+                endGameSession();
+            }
+            
             gameState = {
                 cards: [],
                 flippedCards: [],
@@ -490,7 +664,8 @@
                 gameStarted: false,
                 gameOver: false,
                 isPaused: false,
-                isAnimating: false
+                isAnimating: false,
+                sessionId: null
             };
             gameBoardEl.innerHTML = '';
             updateStats();
@@ -579,17 +754,23 @@
             updateButtons();
             showMessage(`Game Over! Final Score: ${gameState.score}`, 'error');
             
+            // End real-time session
+            endGameSession();
+            
             // Submit score to leaderboard
             submitScore();
         }
 
         async function submitScore() {
             try {
-                // Get the current user and game information from parent window
-                const userToken = localStorage.getItem('user_token');
-                if (!userToken) {
-                    console.log('User not authenticated, skipping score submission');
-                    return;
+                // Initialize WebSocket if not already done
+                if (!window.realtimeGame) {
+                    initializeWebSocket();
+                }
+
+                // Start game session if not active
+                if (!window.realtimeGame.isSessionActive) {
+                    await window.realtimeGame.startGameSession();
                 }
 
                 const scoreData = {
@@ -604,26 +785,234 @@
                     completed_at: new Date().toISOString()
                 };
 
-                // Submit to Memory Test Game leaderboard
-                const response = await fetch('/api/leaderboards/memory-test-game/submit', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${userToken}`,
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
-                    },
-                    body: JSON.stringify(scoreData)
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    showMessage(`Score submitted! Your rank: #${result.rank}`, 'success');
+                // Submit via WebSocket
+                const result = await window.realtimeGame.submitScore(scoreData);
+                
+                if (result.success) {
+                    showMessage(`Score submitted via WebSocket! Your rank: #${result.rank}`, 'success');
                 } else {
-                    console.error('Failed to submit score:', response.statusText);
+                    // Fallback to API call
+                    const userToken = localStorage.getItem('user_token');
+                    if (!userToken) {
+                        console.log('User not authenticated, skipping score submission');
+                        return;
+                    }
+
+                    const response = await fetch('/api/leaderboards/memory-test-game/submit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${userToken}`,
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                        },
+                        body: JSON.stringify(scoreData)
+                    });
+
+                    if (response.ok) {
+                        const apiResult = await response.json();
+                        showMessage(`Score submitted! Your rank: #${apiResult.rank}`, 'success');
+                    } else {
+                        showMessage('Failed to submit score. Please try again.', 'error');
+                    }
                 }
             } catch (error) {
                 console.error('Error submitting score:', error);
+                showMessage('Error submitting score. Please try again.', 'error');
             }
+        }
+
+        function initializeWebSocket() {
+            window.realtimeGame = {
+                sessionId: '',
+                isSessionActive: false,
+                activePlayersCount: 0,
+                playersChannel: null,
+                leaderboardChannel: null,
+                heartbeatInterval: null,
+
+                getUserId: () => window?.Laravel?.user?.id || null,
+                getUserName: () => window?.Laravel?.user?.name || 'Guest',
+
+                async startGameSession() {
+                    try {
+                        if (this.isSessionActive) return { success: true, session_id: this.sessionId };
+                        
+                        this.sessionId = Math.random().toString(36).substr(2, 9);
+                        
+                        // Connect to players channel (public channel for game activity)
+                        this.playersChannel = window.Echo?.channel(`memory-test-game-players`);
+                        
+                        if (this.playersChannel) {
+                            // Start listeners
+                            this.startPlayersListener();
+                            
+                            // Broadcast game start via client event
+                            this.playersChannel.whisper('game-started', {
+                                session_id: this.sessionId,
+                                user_id: this.getUserId(),
+                                user_name: this.getUserName(),
+                                timestamp: Date.now()
+                            });
+                            
+                            // Start heartbeat
+                            this.startHeartbeat();
+                            this.isSessionActive = true;
+                            
+                            console.log('Game session started via WebSocket');
+                        }
+                        
+                        return { success: true, session_id: this.sessionId };
+                    } catch (error) {
+                        console.error('Error starting game session:', error);
+                        return { success: false, error: error.message };
+                    }
+                },
+
+                async endGameSession(score = 0, timePlayed = 0) {
+                    if (!this.sessionId || !this.isSessionActive) return;
+                    
+                    try {
+                        // Broadcast game end
+                        if (this.playersChannel) {
+                            this.playersChannel.whisper('game-ended', {
+                                session_id: this.sessionId,
+                                user_id: this.getUserId(),
+                                user_name: this.getUserName(),
+                                score: score,
+                                time_played: timePlayed,
+                                timestamp: Date.now()
+                            });
+                        }
+                        
+                        this.stopHeartbeat();
+                        this.cleanup();
+                        console.log('Game session ended');
+                    } catch (error) {
+                        console.error('Failed to end game session:', error);
+                    }
+                },
+
+                async submitScore(scoreData) {
+                    try {
+                        // Connect to leaderboard channel if not connected
+                        if (!this.leaderboardChannel) {
+                            this.leaderboardChannel = window.Echo?.channel(`memory-test-game-leaderboard`);
+                        }
+                        
+                        // Submit score via WebSocket
+                        if (this.leaderboardChannel) {
+                            this.leaderboardChannel.whisper('score-submit', {
+                                session_id: this.sessionId,
+                                user_id: this.getUserId(),
+                                user_name: this.getUserName(),
+                                score: scoreData.score,
+                                level_reached: scoreData.level_reached || 1,
+                                time_played_seconds: scoreData.time_played_seconds || 0,
+                                game_data: scoreData.game_data || {},
+                                timestamp: Date.now()
+                            });
+                            
+                            console.log('Score submitted via WebSocket');
+                        }
+                        
+                        // Also make API call for data persistence
+                        const userToken = localStorage.getItem('user_token');
+                        if (userToken) {
+                            const response = await fetch('/api/leaderboards/memory-test-game/submit', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${userToken}`,
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+                                },
+                                body: JSON.stringify(scoreData)
+                            });
+
+                            let result = null;
+                            if (response.ok) {
+                                result = await response.json();
+                                console.log('Score persisted to database');
+                            }
+                            
+                            // End game session
+                            await this.endGameSession(scoreData.score, scoreData.time_played_seconds);
+                            
+                            return {
+                                success: true,
+                                message: 'Score submitted via WebSocket',
+                                rank: result?.rank || 'N/A'
+                            };
+                        } else {
+                            return { success: false, error: 'User not authenticated' };
+                        }
+                    } catch (error) {
+                        console.error('Error submitting score:', error);
+                        return { success: false, error: error.message };
+                    }
+                },
+
+                sendHeartbeat() {
+                    if (!this.sessionId || !this.playersChannel || !this.isSessionActive) return;
+                    
+                    try {
+                        this.playersChannel.whisper('game-heartbeat', {
+                            session_id: this.sessionId,
+                            user_id: this.getUserId(),
+                            timestamp: Date.now()
+                        });
+                    } catch (error) {
+                        console.error('Failed to send heartbeat:', error);
+                    }
+                },
+
+                startHeartbeat() {
+                    this.heartbeatInterval = setInterval(() => this.sendHeartbeat(), 30000);
+                },
+
+                stopHeartbeat() {
+                    if (this.heartbeatInterval) {
+                        clearInterval(this.heartbeatInterval);
+                        this.heartbeatInterval = null;
+                    }
+                },
+
+                startPlayersListener() {
+                    if (!this.playersChannel) return;
+
+                    this.playersChannel.listenForWhisper('game-started', (data) => {
+                        console.log('Player joined:', data);
+                        this.activePlayersCount++;
+                    });
+
+                    this.playersChannel.listenForWhisper('game-ended', (data) => {
+                        console.log('Player left:', data);
+                        this.activePlayersCount = Math.max(0, this.activePlayersCount - 1);
+                    });
+
+                    this.playersChannel.listenForWhisper('game-heartbeat', (data) => {
+                        console.log('Heartbeat received:', data);
+                    });
+
+                    this.playersChannel.listenForWhisper('score-submit', (data) => {
+                        console.log('Score submitted by player:', data);
+                    });
+                },
+
+                cleanup() {
+                    if (this.playersChannel && window.Echo) {
+                        window.Echo.leave(`memory-test-game-players`);
+                        this.playersChannel = null;
+                    }
+                    
+                    if (this.leaderboardChannel && window.Echo) {
+                        window.Echo.leave(`memory-test-game-leaderboard`);
+                        this.leaderboardChannel = null;
+                    }
+                    
+                    this.sessionId = '';
+                    this.isSessionActive = false;
+                }
+            };
         }
 
         // Event listeners
@@ -631,6 +1020,17 @@
         pauseBtn.addEventListener('click', pauseGame);
         playAgainBtn.addEventListener('click', restartGame);
         resetBtn.addEventListener('click', resetGame);
+
+        // Cleanup when page is closed
+        window.addEventListener('beforeunload', () => {
+            if (gameState.sessionId) {
+                endGameSession();
+            }
+            // Also cleanup WebSocket
+            if (window.realtimeGame && window.realtimeGame.isSessionActive) {
+                window.realtimeGame.endGameSession(gameState.score, Math.floor((Date.now() - gameState.startTime) / 1000));
+            }
+        });
 
         // Initialize
         updateStats();

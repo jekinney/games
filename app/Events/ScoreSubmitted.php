@@ -10,16 +10,28 @@ use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ScoreSubmitted
+class ScoreSubmitted implements ShouldBroadcast
 {
     use Dispatchable, InteractsWithSockets, SerializesModels;
+
+    public $gameSlug;
+    public $userId;
+    public $userName;
+    public $score;
+    public $rank;
+    public $gameData;
 
     /**
      * Create a new event instance.
      */
-    public function __construct()
+    public function __construct($gameSlug, $userId, $userName, $score, $rank, $gameData = null)
     {
-        //
+        $this->gameSlug = $gameSlug;
+        $this->userId = $userId;
+        $this->userName = $userName;
+        $this->score = $score;
+        $this->rank = $rank;
+        $this->gameData = $gameData;
     }
 
     /**
@@ -30,7 +42,30 @@ class ScoreSubmitted
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('channel-name'),
+            new Channel("game.{$this->gameSlug}.leaderboard"),
+        ];
+    }
+
+    /**
+     * The event's broadcast name.
+     */
+    public function broadcastAs(): string
+    {
+        return 'score.submitted';
+    }
+
+    /**
+     * Get the data to broadcast.
+     */
+    public function broadcastWith(): array
+    {
+        return [
+            'user_id' => $this->userId,
+            'user_name' => $this->userName,
+            'score' => $this->score,
+            'rank' => $this->rank,
+            'game_data' => $this->gameData,
+            'timestamp' => now()->toISOString(),
         ];
     }
 }

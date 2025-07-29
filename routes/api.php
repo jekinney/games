@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Models\Game;
 use App\Http\Controllers\LeaderboardController;
+use App\Http\Controllers\GameSessionController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -22,9 +23,16 @@ Route::post('/games/{game}/play', function (Game $game) {
     return response()->json(['success' => true]);
 });
 
+// Game Session API routes (for real-time player tracking)
+Route::prefix('games/{gameSlug}')->group(function () {
+    Route::post('/start', [GameSessionController::class, 'startGame']);
+    Route::post('/end', [GameSessionController::class, 'endGame']);
+    Route::post('/heartbeat', [GameSessionController::class, 'heartbeat']);
+    Route::get('/players', [GameSessionController::class, 'getActivePlayers']);
+});
+
 // Leaderboard API routes
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/leaderboards/{game:slug}', [LeaderboardController::class, 'getLeaderboardData']);
-    Route::post('/leaderboards/{game:slug}/submit', [LeaderboardController::class, 'submitScore']);
-    Route::get('/leaderboards/global', [LeaderboardController::class, 'globalLeaderboard']);
+Route::get('/leaderboards/{gameSlug}', [LeaderboardController::class, 'getLeaderboardData']);
+Route::middleware('auth')->group(function () {
+    Route::post('/leaderboards/{gameSlug}/submit', [LeaderboardController::class, 'submitScore']);
 });

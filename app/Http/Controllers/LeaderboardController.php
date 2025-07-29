@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ScoreSubmitted;
 use App\Models\Game;
 use App\Models\GameScore;
 use Illuminate\Http\Request;
@@ -11,156 +12,132 @@ use Inertia\Response;
 class LeaderboardController extends Controller
 {
     /**
-     * Display the main leaderboard page
+     * Get leaderboard data for API (modal usage)
      */
-    public function index(): Response
+    public function getLeaderboardData($gameSlug, Request $request)
     {
-        $games = Game::active()
-            ->select('id', 'name', 'slug', 'category', 'thumbnail_url')
-            ->orderBy('name')
-            ->get();
-
-        return Inertia::render('Leaderboards/Index', [
-            'games' => $games
-        ]);
-    }
-
-    /**
-     * Display leaderboard for a specific game
-     */
-    public function show(Game $game, Request $request): Response
-    {
-        $timeframe = $request->get('timeframe', 'all');
-        $limit = $request->get('limit', 50);
-
-        // Validate timeframe
-        $validTimeframes = ['all', '30d', '60d', '90d', '1y'];
-        if (!in_array($timeframe, $validTimeframes)) {
-            $timeframe = 'all';
+        // Find game by slug
+        $game = Game::where('slug', $gameSlug)->first();
+        
+        if (!$game) {
+            return response()->json(['error' => 'Game not found'], 404);
         }
-
-        // Get leaderboard data
-        $leaderboard = GameScore::getLeaderboard($game->id, $timeframe, $limit);
-
-        // Add ranking to the results
-        $leaderboard = $leaderboard->map(function ($score, $index) {
-            $score->rank = $index + 1;
-            return $score;
-        });
-
-        // Get current user's rank and score if authenticated
-        $userData = null;
+        
+        // Get top 10 scores for this game
+        $topTen = GameScore::where('game_id', $game->id)
+            ->with('user') // Load the user relationship
+            ->orderBy('score', 'desc')
+            ->orderBy('created_at', 'asc') // Earlier submission wins ties
+            ->limit(10)
+            ->get()
+            ->map(function ($score) {
+                return [
+                    'id' => $score->id,
+                    'user_name' => $score->user->name ?? 'Anonymous',
+                    'score' => $score->score,
+                    'level_reached' => $score->level_reached,
+                    'created_at' => $score->created_at->toISOString()
+                ];
+            })
+            ->toArray();
+        
+        $currentUser = null;
+        
+        // Add current user if authenticated
         if (auth()->check()) {
-            $userBestScore = GameScore::getUserBestScore(auth()->id(), $game->id);
-            $userRank = GameScore::getUserRank(auth()->id(), $game->id, $timeframe);
-            
+            $userBestScore = GameScore::where('game_id', $game->id)
+                ->where('user_id', auth()->id())
+                ->with('user')
+                ->orderBy('score', 'desc')
+                ->first();
+                
             if ($userBestScore) {
-                $userData = [
+                // Calculate rank for user's best score
+                $rank = GameScore::where('game_id', $game->id)
+                    ->where(function ($query) use ($userBestScore) {
+                        $query->where('score', '>', $userBestScore->score)
+                            ->orWhere(function ($q) use ($userBestScore) {
+                                $q->where('score', $userBestScore->score)
+                                  ->where('created_at', '<', $userBestScore->created_at);
+                            });
+                    })
+                    ->count() + 1;
+                    
+                $currentUser = [
+                    'id' => $userBestScore->id,
+                    'user_name' => $userBestScore->user->name ?? 'Anonymous',
                     'score' => $userBestScore->score,
-                    'rank' => $userRank,
                     'level_reached' => $userBestScore->level_reached,
-                    'time_played' => $userBestScore->time_played_seconds,
+                    'rank' => $rank,
+                    'created_at' => $userBestScore->created_at->toISOString(),
+                    'inTopTen' => $rank <= 10
                 ];
             }
         }
 
-        return Inertia::render('Leaderboards/GameLeaderboard', [
-            'game' => $game,
-            'leaderboard' => $leaderboard,
-            'timeframe' => $timeframe,
-            'userData' => $userData,
-            'timeframes' => [
-                'all' => 'All Time',
-                '30d' => 'Last 30 Days',
-                '60d' => 'Last 60 Days',
-                '90d' => 'Last 90 Days',
-                '1y' => 'Last Year'
+        return response()->json([
+            'topTen' => $topTen,
+            'currentUser' => $currentUser,
+            'game' => [
+                'name' => $game->name,
+                'slug' => $gameSlug
             ]
         ]);
-    }
-
-    /**
+    }    /**
      * Submit a score for a game
      */
-    public function submitScore(Request $request, Game $game)
+    public function submitScore(Request $request, $gameSlug)
     {
-        $request->validate([
-            'score' => 'required|integer|min:0',
+        $validated = $request->validate([
+            'score' => 'required|integer|min:1', // Scores must be positive
             'level_reached' => 'nullable|integer|min:1',
             'time_played_seconds' => 'nullable|integer|min:0',
             'game_data' => 'nullable|array',
             'completed_at' => 'nullable|date'
         ]);
 
-        $gameScore = GameScore::create([
-            'user_id' => auth()->id(),
-            'game_id' => $game->id,
-            'score' => $request->score,
-            'level_reached' => $request->level_reached,
-            'time_played_seconds' => $request->time_played_seconds,
-            'game_data' => $request->game_data,
-            'completed_at' => $request->completed_at ?? now(),
-        ]);
-
-        // Increment play count
-        $game->incrementPlayCount();
-
-        return response()->json([
-            'message' => 'Score submitted successfully!',
-            'score' => $gameScore,
-            'rank' => GameScore::getUserRank(auth()->id(), $game->id)
-        ]);
-    }
-
-    /**
-     * Get leaderboard data via API
-     */
-    public function getLeaderboardData(Game $game, Request $request)
-    {
-        $timeframe = $request->get('timeframe', 'all');
-        $limit = $request->get('limit', 10);
-
-        $leaderboard = GameScore::getLeaderboard($game->id, $timeframe, $limit);
-        
-        return response()->json([
-            'leaderboard' => $leaderboard,
-            'game' => $game->only(['id', 'name', 'slug'])
-        ]);
-    }
-
-    /**
-     * Get global leaderboard across all games
-     */
-    public function globalLeaderboard(Request $request)
-    {
-        $timeframe = $request->get('timeframe', 'all');
-        
-        $query = GameScore::with(['user', 'game'])
-            ->select('user_id', \DB::raw('SUM(score) as total_score'), \DB::raw('COUNT(*) as games_played'))
-            ->groupBy('user_id')
-            ->orderBy('total_score', 'desc');
-
-        // Apply timeframe filter
-        switch ($timeframe) {
-            case '30d':
-                $query->withinTimeframe(30);
-                break;
-            case '60d':
-                $query->withinTimeframe(60);
-                break;
-            case '90d':
-                $query->withinTimeframe(90);
-                break;
-            case '1y':
-                $query->withinTimeframe(365);
-                break;
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['error' => 'Authentication required'], 401);
         }
 
-        $globalLeaderboard = $query->limit(50)->get();
+        // Find the game by slug
+        $game = Game::where('slug', $gameSlug)->first();
+        if (!$game) {
+            return response()->json(['error' => 'Game not found'], 404);
+        }
 
+        // Create GameScore record
+        $gameScore = GameScore::create([
+            'user_id' => $user->id,
+            'game_id' => $game->id,
+            'score' => $validated['score'],
+            'level_reached' => $validated['level_reached'] ?? null,
+            'time_played_seconds' => $validated['time_played_seconds'] ?? null,
+            'game_data' => $validated['game_data'] ?? null,
+            'completed_at' => $validated['completed_at'] ?? now(),
+        ]);
+
+        // Calculate rank by counting scores higher than this one
+        $rank = GameScore::where('game_id', $game->id)
+            ->where('score', '>', $validated['score'])
+            ->count() + 1;
+
+        // Dispatch real-time event for leaderboard updates
+        ScoreSubmitted::dispatch(
+            $gameSlug,
+            $user->id,
+            $user->name,
+            $validated['score'],
+            $rank,
+            $validated['game_data'] ?? null
+        );
+        
         return response()->json([
-            'leaderboard' => $globalLeaderboard,
-            'timeframe' => $timeframe
+            'message' => 'Score submitted successfully!',
+            'score' => $validated['score'],
+            'rank' => $rank,
+            'game_score_id' => $gameScore->id
         ]);
     }
 }
