@@ -22,7 +22,6 @@ This document provides comprehensive instructions for adding new games to the La
 - **Database**: MySQL with migrations
 - **File Storage**: Local/Cloud storage for game assets
 - **Admin Panel**: Full CRUD operations for game management
-- **API Routes**: RESTful endpoints for game data
 - **Real-time Features**: Laravel Reverb for live updates
 - **Broadcasting**: WebSocket connections for player tracking
 
