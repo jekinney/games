@@ -24,17 +24,21 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs
 
-# Copy application files first
-COPY . .
-
-# Create necessary directories
-RUN mkdir -p /var/www/bootstrap/cache /var/www/storage/logs /var/www/storage/framework/cache /var/www/storage/framework/sessions /var/www/storage/framework/views
+# Copy only composer files first
+COPY composer.json composer.lock ./
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-# Install Node dependencies
+# Install Laravel Boost as dev dependency
+RUN composer require laravel/boost --dev --no-interaction
+
+# Copy package.json and install Node dependencies
+COPY package.json package-lock.json ./
 RUN npm install
+
+# Copy application source code (excluding vendor/node_modules via .dockerignore)
+COPY . .
 
 # Set proper permissions
 RUN chown -R www-data:www-data /var/www \

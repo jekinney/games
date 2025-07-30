@@ -10,6 +10,49 @@ class LeaderboardIntegrationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        
+        // Create memory test game for integration testing
+        \App\Models\Game::create([
+            'name' => 'Memory Test Game',
+            'slug' => 'memory-test-game',
+            'description' => 'A test memory game',
+            'game_file_url' => '/games/memory-test-game.html',
+            'category' => 'puzzle',
+            'difficulty' => 'medium',
+            'is_active' => true,
+            'min_players' => 1,
+            'max_players' => 1,
+            'estimated_play_time' => 15,
+        ]);
+
+        // Create additional test games
+        $testGames = [
+            ['name' => 'Puzzle Master', 'slug' => 'puzzle-master'],
+            ['name' => 'Tetris Classic', 'slug' => 'tetris-classic'],
+            ['name' => 'Space Invaders', 'slug' => 'space-invaders'],
+            ['name' => 'Speed Typing', 'slug' => 'speed-typing'],
+            ['name' => 'Math Quiz', 'slug' => 'math-quiz'],
+        ];
+
+        foreach ($testGames as $gameData) {
+            \App\Models\Game::create([
+                'name' => $gameData['name'],
+                'slug' => $gameData['slug'],
+                'description' => 'A test game',
+                'game_file_url' => '/games/' . $gameData['slug'] . '.html',
+                'category' => 'puzzle',
+                'difficulty' => 'medium',
+                'is_active' => true,
+                'min_players' => 1,
+                'max_players' => 1,
+                'estimated_play_time' => 15,
+            ]);
+        }
+    }
+
     public function test_games_page_renders_with_leaderboard_buttons()
     {
         $response = $this->get('/games');
@@ -48,6 +91,17 @@ class LeaderboardIntegrationTest extends TestCase
             'name' => 'TestGamer'
         ]);
 
+        $game = \App\Models\Game::where('slug', 'memory-test-game')->first();
+        
+        // Create a score for this user first
+        \App\Models\GameScore::create([
+            'user_id' => $user->id,
+            'game_id' => $game->id,
+            'score' => 3500,
+            'level_reached' => 4,
+            'created_at' => now()->subDays(1),
+        ]);
+
         // Test authenticated games page access
         $response = $this->actingAs($user)->get('/games');
         $response->assertStatus(200);
@@ -57,7 +111,9 @@ class LeaderboardIntegrationTest extends TestCase
         $apiResponse->assertStatus(200);
 
         $data = $apiResponse->json();
+        $this->assertNotNull($data['currentUser']);
         $this->assertEquals('TestGamer', $data['currentUser']['user_name']);
+        $this->assertEquals(3500, $data['currentUser']['score']);
 
         // Test score submission
         $submitResponse = $this->actingAs($user)

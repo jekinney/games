@@ -10,6 +10,8 @@ services:
     working_dir: /var/www
     volumes:
       - ./:/var/www
+      - vendor_data:/var/www/vendor
+      - node_modules_data:/var/www/node_modules
       - ./docker/php/local.ini:/usr/local/etc/php/conf.d/local.ini
     networks:
       - games_network
@@ -69,9 +71,11 @@ services:
       - "8080:8080"
     volumes:
       - ./:/var/www
+      - vendor_data:/var/www/vendor
     networks:
       - games_network
     depends_on:
+      - app
       - database
       - redis
     environment:
@@ -79,18 +83,20 @@ services:
       - REVERB_PORT=8080
 
   vite:
-    image: node:18-alpine
+    image: node:20-alpine
     container_name: games_vite
     restart: unless-stopped
     working_dir: /var/www
-    command: npm run dev -- --host 0.0.0.0
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     ports:
       - "5173:5173"
     volumes:
       - ./:/var/www
-      - /var/www/node_modules
+      - node_modules_data:/var/www/node_modules
     networks:
       - games_network
+    depends_on:
+      - app
     environment:
       - CHOKIDAR_USEPOLLING=true
 
@@ -100,4 +106,8 @@ networks:
 
 volumes:
   games_db_data:
+    driver: local
+  vendor_data:
+    driver: local
+  node_modules_data:
     driver: local

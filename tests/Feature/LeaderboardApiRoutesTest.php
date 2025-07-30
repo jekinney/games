@@ -10,6 +10,54 @@ class LeaderboardApiRoutesTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        
+        // Create test games for API testing
+        \App\Models\Game::create([
+            'name' => 'Test Game',
+            'slug' => 'test-game',
+            'description' => 'A test game',
+            'game_file_url' => '/games/test-game.html',
+            'category' => 'puzzle',
+            'difficulty' => 'medium',
+            'is_active' => true,
+            'min_players' => 1,
+            'max_players' => 1,
+            'estimated_play_time' => 15,
+        ]);
+
+        // Create additional test games
+        $testGames = [
+            ['name' => 'Simple Game', 'slug' => 'simple-game'],
+            ['name' => 'Game With Numbers 123', 'slug' => 'game-with-numbers-123'],
+            ['name' => 'Very Long Game Name With Many Words', 'slug' => 'very-long-game-name-with-many-words'],
+            ['name' => 'A', 'slug' => 'a'],
+            ['name' => 'Game 2024 Edition', 'slug' => 'game-2024-edition'],
+            ['name' => 'Test Game', 'slug' => 'test game'], // URL will be encoded as test%20game
+            ['name' => 'Game 1', 'slug' => 'game-1'],
+            ['name' => 'Game 2', 'slug' => 'game-2'],
+            ['name' => 'Memory Test Game', 'slug' => 'memory-test-game'],
+            ['name' => 'Puzzle Game', 'slug' => 'puzzle-game'],
+        ];
+
+        foreach ($testGames as $gameData) {
+            \App\Models\Game::create([
+                'name' => $gameData['name'],
+                'slug' => $gameData['slug'],
+                'description' => 'A test game',
+                'game_file_url' => '/games/' . str_replace(' ', '-', $gameData['slug']) . '.html',
+                'category' => 'puzzle',
+                'difficulty' => 'medium',
+                'is_active' => true,
+                'min_players' => 1,
+                'max_players' => 1,
+                'estimated_play_time' => 15,
+            ]);
+        }
+    }
+
     public function test_leaderboard_api_routes_are_registered()
     {
         // Test GET route exists

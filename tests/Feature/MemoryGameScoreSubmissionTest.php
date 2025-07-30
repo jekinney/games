@@ -12,6 +12,25 @@ class MemoryGameScoreSubmissionTest extends TestCase
 {
     use RefreshDatabase, WithFaker;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        
+        // Create memory test game for score submission testing
+        \App\Models\Game::create([
+            'name' => 'Memory Test Game',
+            'slug' => 'memory-test-game',
+            'description' => 'A test memory game',
+            'game_file_url' => '/games/memory-test-game.html',
+            'category' => 'puzzle',
+            'difficulty' => 'medium',
+            'is_active' => true,
+            'min_players' => 1,
+            'max_players' => 1,
+            'estimated_play_time' => 15,
+        ]);
+    }
+
     public function test_authenticated_user_can_submit_memory_game_score()
     {
         $user = User::factory()->create();

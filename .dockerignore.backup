@@ -1,0 +1,37 @@
+# Dependencies with specific wildcard exclusions
+node_modules/
+node_modules/**
+vendor/
+vendor/**
+
+# Docker-related files
+.env.docker
+docker-compose.override.yml
+
+# Docker volumes
+/docker/mysql/
+/docker/redis/
+
+# Windows and permission issues
+.git/
+.git/**
+.env*
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+bootstrap/cache/*
+.npm
+.yarn-integrity
+yarn-error.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Additional exclusions for file permissions
+**/.git
+**/vendor
+**/node_modules
+.phpunit.cache/
+.phpunit.cache/**
+**/*.cache

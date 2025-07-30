@@ -22,6 +22,20 @@ class ReverbIntegrationTest extends TestCase
         // Fake events and queues to prevent actual broadcasting during tests
         Event::fake();
         Queue::fake();
+
+        // Create memory test game for reverb testing
+        \App\Models\Game::create([
+            'name' => 'Memory Test Game',
+            'slug' => 'memory-test-game',
+            'description' => 'A test memory game',
+            'game_file_url' => '/games/memory-test-game.html',
+            'category' => 'puzzle',
+            'difficulty' => 'medium',
+            'is_active' => true,
+            'min_players' => 1,
+            'max_players' => 1,
+            'estimated_play_time' => 15,
+        ]);
     }
 
     public function test_reverb_configuration_is_correct()

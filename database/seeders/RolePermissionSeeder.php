@@ -17,6 +17,8 @@ class RolePermissionSeeder extends Seeder
         // Reset cached roles and permissions
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
+        $this->command->info('🔐 Setting up roles and permissions...');
+
         // Get roles and permissions configuration
         $rolesConfig = config('roles.roles');
         $permissionsConfig = config('roles.permissions');
@@ -31,7 +33,7 @@ class RolePermissionSeeder extends Seeder
         // Assign permissions to roles
         $this->assignPermissionsToRoles($rolePermissionsConfig);
 
-        $this->command->info('Roles and permissions seeded successfully!');
+        $this->command->info('✅ Roles and permissions seeded successfully!');
     }
 
     /**
@@ -41,12 +43,14 @@ class RolePermissionSeeder extends Seeder
     {
         foreach ($permissionsConfig as $category => $permissions) {
             foreach ($permissions as $permissionData) {
-                Permission::firstOrCreate([
+                $permission = Permission::firstOrCreate([
                     'name' => $permissionData['name'],
                     'guard_name' => $permissionData['guard_name'],
                 ]);
                 
-                $this->command->info("Created permission: {$permissionData['name']}");
+                if ($permission->wasRecentlyCreated) {
+                    $this->command->info("✓ Created permission: {$permissionData['name']}");
+                }
             }
         }
     }
@@ -57,12 +61,14 @@ class RolePermissionSeeder extends Seeder
     private function createRoles(array $rolesConfig): void
     {
         foreach ($rolesConfig as $roleData) {
-            Role::firstOrCreate([
+            $role = Role::firstOrCreate([
                 'name' => $roleData['name'],
                 'guard_name' => $roleData['guard_name'],
             ]);
             
-            $this->command->info("Created role: {$roleData['name']}");
+            if ($role->wasRecentlyCreated) {
+                $this->command->info("✓ Created role: {$roleData['name']}");
+            }
         }
     }
 

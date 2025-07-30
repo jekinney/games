@@ -29,6 +29,26 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 class LeaderboardFeatureSummaryTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        
+        // Create test game for feature summary testing
+        \App\Models\Game::create([
+            'name' => 'Test Game',
+            'slug' => 'test-game',
+            'description' => 'A test game',
+            'game_file_url' => '/games/test-game.html',
+            'category' => 'puzzle',
+            'difficulty' => 'medium',
+            'is_active' => true,
+            'min_players' => 1,
+            'max_players' => 1,
+            'estimated_play_time' => 15,
+        ]);
+    }
+    use RefreshDatabase;
     public function test_leaderboard_system_is_fully_implemented()
     {
         // Test that all core leaderboard components are working
