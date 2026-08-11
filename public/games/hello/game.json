@@ -1,0 +1,10 @@
+{
+  "title": "Hello",
+  "entry": "index.html",
+  "description": "Not a game. A test that the plugin system works.",
+  "author": "jek",
+  "year": 2026,
+  "controls": "Click the button",
+  "scoring": "high",
+  "tags": ["test"]
+}

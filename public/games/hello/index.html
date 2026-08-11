@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hello</title>
+<style>
+  html, body { height: 100%; margin: 0; }
+  body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 14px; background: #000; color: #0f0;
+    font: 14px "Courier New", monospace; text-align: center;
+  }
+  h1 { font-size: 22px; margin: 0; letter-spacing: 3px; }
+  button {
+    font: inherit; color: #000; background: #0f0; border: 0;
+    padding: 8px 16px; cursor: pointer;
+  }
+  button:hover { background: #fff; }
+  #out { min-height: 1.4em; color: #6f6; }
+</style>
+</head>
+<body>
+
+<h1>HELLO</h1>
+<p>If you can read this, the plugin system found this folder.</p>
+<button id="go">Fake a game over</button>
+<p id="out"></p>
+
+<script>
+  // M4 will add /assets/arcade-sdk.js. Until then this posts the raw message
+  // the SDK will send, so the shell's message plumbing can be tested now.
+  document.getElementById('go').addEventListener('click', function () {
+    var score = Math.floor(Math.random() * 5000);
+    document.getElementById('out').textContent = 'sent score: ' + score;
+    parent.postMessage(
+      { source: 'arcade-game', type: 'score', value: score },
+      window.location.origin
+    );
+  });
+
+  parent.postMessage({ source: 'arcade-game', type: 'ready' }, window.location.origin);
+</script>
+
+</body>
+</html>

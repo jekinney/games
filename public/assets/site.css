@@ -1,0 +1,162 @@
+/* Retro Arcade — the whole site's styling. Plain on purpose. */
+
+:root {
+  --bg: #fff;
+  --text: #333;
+  --muted: #777;
+  --link: #00e;
+  --visited: #551a8b;
+  --accent: #c00;
+  --rule: #ccc;
+  --stripe: #f4f4f4;
+  --mono: "Courier New", Courier, monospace;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.45 -apple-system, "Segoe UI", Tahoma, Verdana, sans-serif;
+}
+
+a { color: var(--link); }
+a:visited { color: var(--visited); }
+a:hover { color: var(--accent); }
+
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 15px; margin: 20px 0 6px; text-transform: uppercase; letter-spacing: .5px; }
+h3 { font-size: 13px; margin: 12px 0 4px; }
+
+code { font-family: var(--mono); font-size: 12px; background: var(--stripe); padding: 0 3px; }
+.muted { color: var(--muted); font-size: 13px; }
+
+/* ---- chrome ---- */
+
+#site-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--text);
+  flex-wrap: wrap;
+}
+
+#site-title {
+  font-family: var(--mono);
+  font-weight: bold;
+  font-size: 20px;
+  letter-spacing: 2px;
+  text-decoration: none;
+  color: var(--text);
+}
+#site-title:hover { color: var(--accent); }
+
+#site-header nav a { margin-left: 12px; font-size: 13px; }
+
+#layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 14px;
+  max-width: 1100px;
+}
+
+#sidebar {
+  flex: 0 0 190px;
+  border-right: 1px solid var(--rule);
+  padding-right: 14px;
+  min-height: 60vh;
+}
+#sidebar h2 { margin-top: 0; }
+
+#game-list { list-style: none; margin: 0 0 10px; padding: 0; }
+#game-list li { margin: 0 0 2px; }
+#game-list a { text-decoration: none; }
+#game-list a:hover { text-decoration: underline; }
+#game-list li.current a { font-weight: bold; color: var(--accent); }
+#game-list li.current a::before { content: "\00bb "; }
+
+.sidebar-note { border-top: 1px solid var(--rule); padding-top: 8px; margin-top: 14px; }
+
+#problems { border: 1px solid var(--accent); padding: 6px 8px; margin: 10px 0; }
+#problems ul { margin: 0; padding-left: 16px; font-size: 12px; color: var(--accent); }
+
+#main { flex: 1 1 auto; min-width: 0; }
+
+#site-footer {
+  border-top: 1px solid var(--rule);
+  margin-top: 24px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---- home grid ---- */
+
+#game-grid { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 12px; }
+#game-grid li { width: 180px; }
+#game-grid a { display: block; text-decoration: none; border: 1px solid var(--rule); padding: 6px; }
+#game-grid a:hover { border-color: var(--accent); }
+#game-grid .thumb {
+  display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover;
+  background: var(--stripe); border: 1px solid var(--rule);
+}
+#game-grid .letter {
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); font-size: 40px; font-weight: bold; color: var(--muted);
+}
+#game-grid .name { display: block; margin-top: 5px; font-weight: bold; }
+#game-grid .meta { display: block; color: var(--muted); font-size: 12px; }
+
+/* ---- player ---- */
+
+.controls { font-size: 13px; margin: 4px 0 10px; }
+.controls b { font-weight: bold; }
+
+#stage {
+  position: relative;
+  border: 2px solid var(--text);
+  background: #000;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 70vh;
+}
+#stage iframe { display: block; width: 100%; height: 100%; border: 0; }
+
+#stage-status {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--mono); color: #ddd; font-size: 13px;
+  pointer-events: none;
+}
+#stage-status[hidden] { display: none; }
+
+/* ---- score board ---- */
+
+#board { border-collapse: collapse; width: 100%; max-width: 480px; font-family: var(--mono); font-size: 14px; }
+#board th, #board td { border: 1px solid var(--rule); padding: 3px 8px; text-align: left; }
+#board th { background: var(--stripe); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+#board td.rank, #board th.rank { width: 34px; text-align: right; }
+#board td.score, #board th.score { text-align: right; }
+#board td.when, #board th.when { color: var(--muted); font-size: 12px; }
+#board tr.empty td { color: var(--muted); }
+#board tr.fresh td { color: var(--accent); font-weight: bold; }
+
+/* ---- small screens ---- */
+
+@media (max-width: 700px) {
+  #layout { display: block; padding: 10px; }
+  #sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+    padding-right: 0;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
+    min-height: 0;
+  }
+  #stage { aspect-ratio: 1 / 1; }
+  #game-grid li { width: calc(50% - 6px); }
+}
