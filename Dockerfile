@@ -5,7 +5,12 @@ RUN sed -i 's|/var/www/html|/var/www/html/public|g' \
         /etc/apache2/sites-available/000-default.conf \
     && sed -i 's|/var/www/html|/var/www/html/public|g' \
         /etc/apache2/apache2.conf \
-    && a2enmod rewrite
+    && a2enmod rewrite headers
+
+# Disable caching for JS/CSS so redeploying shows up immediately
+RUN printf '<FilesMatch "\\.(js|css)$">\n  Header set Cache-Control "no-cache, must-revalidate"\n</FilesMatch>\n' \
+    >> /etc/apache2/conf-available/no-cache-assets.conf \
+    && a2enconf no-cache-assets
 
 WORKDIR /var/www/html
 COPY . .
