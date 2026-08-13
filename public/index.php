@@ -27,16 +27,14 @@ $theme = ($_GET['theme'] ?? '') === 'crt' ? 'crt' : '';
 
   <aside id="sidebar">
     <h2>Games</h2>
+    <input id="game-search" type="search" placeholder="search&hellip;" autocomplete="off" aria-label="Search games">
     <ul id="game-list"><li class="muted">loading&hellip;</li></ul>
     <p id="game-count" class="muted"></p>
     <div id="problems" hidden>
       <h3>Skipped folders</h3>
       <ul id="problem-list"></ul>
     </div>
-    <p class="muted sidebar-note">
-      Drop a folder into <code>public/games/</code> to add a game.
-      See <code>docs/plan</code>.
-    </p>
+
   </aside>
 
   <main id="main">

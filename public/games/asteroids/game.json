@@ -1,0 +1,11 @@
+{
+  "title": "Asteroids",
+  "entry": "index.html",
+  "description": "Clear the field. Mind the debris.",
+  "author": "jek",
+  "year": 1979,
+  "controls": "Left / Right to rotate · Up to thrust · SPACE to fire",
+  "scoring": "high",
+  "maxScore": 9999999,
+  "tags": ["classic", "single-player", "vector"]
+}

@@ -43,6 +43,7 @@
     boardBody: document.getElementById('board-body'),
     liveScore: document.getElementById('live-score'),
     liveScoreValue: document.getElementById('live-score-value'),
+    gameSearch: document.getElementById('game-search'),
     submitNote: document.getElementById('submit-note'),
     modal: document.getElementById('initials-modal'),
     modalBox: document.getElementById('initials-box'),
@@ -96,11 +97,29 @@
 
     window.addEventListener('hashchange', route);
     window.addEventListener('message', onGameMessage);
+    el.gameSearch.addEventListener('input', function () {
+      renderSidebar();
+      renderGrid();
+      markCurrent(currentGameId());
+    });
   }
 
   /* ---------- sidebar + grid ---------- */
 
+  function searchQuery() {
+    return el.gameSearch.value.trim().toLowerCase();
+  }
+
+  function filteredGames() {
+    var q = searchQuery();
+    if (!q) return state.games;
+    return state.games.filter(function (g) {
+      return g.title.toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
   function renderSidebar() {
+    var games = filteredGames();
     el.gameList.innerHTML = '';
 
     if (!state.games.length) {
@@ -112,17 +131,30 @@
       return;
     }
 
-    state.games.forEach(function (game) {
-      var li = document.createElement('li');
-      li.dataset.id = game.id;
-      var a = document.createElement('a');
-      a.href = '#' + game.id;
-      text(a, game.title);
-      li.appendChild(a);
-      el.gameList.appendChild(li);
-    });
+    if (!games.length) {
+      var none = document.createElement('li');
+      none.className = 'muted';
+      text(none, 'no matches');
+      el.gameList.appendChild(none);
+    } else {
+      games.forEach(function (game) {
+        var li = document.createElement('li');
+        li.dataset.id = game.id;
+        var a = document.createElement('a');
+        a.href = '#' + game.id;
+        text(a, game.title);
+        li.appendChild(a);
+        el.gameList.appendChild(li);
+      });
+    }
 
-    text(el.gameCount, state.games.length + (state.games.length === 1 ? ' game' : ' games'));
+    var q = searchQuery();
+    var total = state.games.length;
+    if (q && games.length !== total) {
+      text(el.gameCount, games.length + ' of ' + total + ' games');
+    } else {
+      text(el.gameCount, total + (total === 1 ? ' game' : ' games'));
+    }
   }
 
   function markCurrent(id) {
@@ -134,7 +166,7 @@
   function renderGrid() {
     el.gameGrid.innerHTML = '';
 
-    state.games.forEach(function (game) {
+    filteredGames().forEach(function (game) {
       var li = document.createElement('li');
       var a = document.createElement('a');
       a.href = '#' + game.id;
