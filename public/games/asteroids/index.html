@@ -19,7 +19,7 @@
     gap: 10px; text-align: center; padding: 16px;
     background: rgba(0,0,0,.75);
   }
-  #overlay[hidden] { display: none; }
+  #overlay { cursor: pointer; }
   #overlay h1 { margin: 0; font-size: 28px; letter-spacing: 6px; }
   #overlay p  { margin: 0; font-size: 13px; }
   .dim   { color: #888; }
@@ -31,7 +31,7 @@
 <body>
 
 <div id="wrap">
-  <canvas id="board" width="480" height="360"></canvas>
+  <canvas id="board" width="480" height="360" tabindex="0"></canvas>
   <div id="overlay">
     <h1>ASTEROIDS</h1>
     <p class="dim" id="record">&nbsp;</p>

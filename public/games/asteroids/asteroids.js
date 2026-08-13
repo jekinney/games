@@ -130,15 +130,7 @@
     if (phase === 'title' && (e.code === 'Space' || e.code === 'Enter')) {
       startGame();
     } else if (phase === 'over' && e.code === 'Space') {
-      phase = 'submitted';
-      ovHint.textContent = '';
-      Arcade.submitScore(score).then(function (r) {
-        if (!r) return;
-        ovSub.textContent = r.accepted ? 'RANK ' + r.rank + '!' : 'NOT ON THE BOARD';
-        ovHint.textContent = 'SPACE to play again';
-        ovHint.classList.add('blink');
-        phase = 'done';
-      });
+      submitGameOver();
     } else if (phase === 'done' && e.code === 'Space') {
       ovSub.textContent = '\u00a0';
       ovHint.textContent = 'PRESS SPACE TO START';
@@ -147,6 +139,25 @@
   });
 
   document.addEventListener('keyup', function (e) { keys[e.code] = false; });
+
+  overlay.addEventListener('click', function () {
+    if (phase === 'title') { startGame(); }
+    else if (phase === 'over') { submitGameOver(); }
+    else if (phase === 'done') { phase = 'title'; ovSub.textContent = '\u00a0'; ovHint.textContent = 'PRESS SPACE TO START'; }
+  });
+
+  function submitGameOver() {
+    if (phase !== 'over') return;
+    phase = 'submitted';
+    ovHint.textContent = '';
+    Arcade.submitScore(score).then(function (r) {
+      if (!r) return;
+      ovSub.textContent = r.accepted ? 'RANK ' + r.rank + '!' : 'NOT ON THE BOARD';
+      ovHint.textContent = 'SPACE or click to play again';
+      ovHint.classList.add('blink');
+      phase = 'done';
+    });
+  }
 
   function tryFire() {
     if (fireCd > 0 || bullets.length >= MAX_BULLETS) return;
@@ -395,6 +406,7 @@
   rocks = spawnWave(5);   // title background
 
   Arcade.ready();
+  canvas.focus();   // grab keyboard focus so Space-to-start works immediately
   Arcade.getHighScores().then(function (hs) {
     if (hs && hs.length && hs[0] && hs[0].score) {
       recordEl.textContent = 'RECORD ' + hs[0].score.toLocaleString();
