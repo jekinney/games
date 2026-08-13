@@ -55,19 +55,22 @@ not the game.
 
 ## M6 — Trim
 
-- `/scores.php` (all boards) and `/about.php`
-- `scripts/clear-score.php`, `scripts/clear-board.php`
-- Thumbnails, `?debug=1`, the optional CRT theme
-- A `docs/adding-a-game.md` written from actually doing M5
+- `public/scores.php` — all boards on one page ✓
+- `public/about.php` ✓
+- `scripts/arcade.php` — `remove` and `clear` commands (replaces the separate clear-score / clear-board scripts) ✓
+- Thumbnails: `game.json` `thumb` field + CSS fallback letter tile ✓
+- `?debug=1` shows skipped-folder problems in the sidebar ✓
+- `?theme=crt` — scanline overlay, green-on-black ✓
+- `docs/adding-a-game.md` ✓
 
 ## Definition of done for v1
 
-- [ ] Three playable games, each in its own folder
-- [ ] Dropping a fourth folder in adds it with zero code changes
-- [ ] Scores persist across browsers and machines
-- [ ] Initials entry works by keyboard alone, with the countdown
-- [ ] A malformed game folder doesn't break the site
-- [ ] No login, no accounts, no cookies beyond a session-less site
+- [x] Three playable games, each in its own folder
+- [x] Dropping a fourth folder in adds it with zero code changes
+- [x] Scores persist across browsers and machines
+- [x] Initials entry works by keyboard alone, with the countdown
+- [x] A malformed game folder doesn't break the site
+- [x] No login, no accounts, no cookies beyond a session-less site
 - [ ] Loads in under a second on a cold cache
 
 ## Rough effort

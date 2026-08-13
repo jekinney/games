@@ -1,0 +1,11 @@
+{
+  "title": "Snake",
+  "entry": "index.html",
+  "description": "Eat, grow, don't bite yourself.",
+  "author": "jek",
+  "year": 1976,
+  "controls": "Arrow keys or WASD · P to pause · SPACE to start",
+  "scoring": "high",
+  "maxScore": 100000,
+  "tags": ["classic", "single-player"]
+}

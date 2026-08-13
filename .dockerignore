@@ -1,0 +1,5 @@
+.git
+tests/
+docs/
+data/scores/*.json
+data/ratelimit/*.json

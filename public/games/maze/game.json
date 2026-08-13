@@ -1,0 +1,12 @@
+{
+  "title": "Time Attack Maze",
+  "entry": "index.html",
+  "description": "A fresh maze every run. Corner to corner, against the clock.",
+  "author": "jek",
+  "year": 1981,
+  "controls": "Arrow keys or WASD · SPACE to start",
+  "scoring": "low",
+  "minScore": 200,
+  "maxScore": 99999,
+  "tags": ["puzzle", "time-attack", "single-player"]
+}

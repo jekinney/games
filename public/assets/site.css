@@ -134,16 +134,106 @@ code { font-family: var(--mono); font-size: 12px; background: var(--stripe); pad
 }
 #stage-status[hidden] { display: none; }
 
+/* ---- live score ---- */
+
+#live-score {
+  font-family: var(--mono);
+  font-size: 13px;
+  margin: 0 0 6px;
+  letter-spacing: 1px;
+}
+#live-score-value { font-weight: bold; font-size: 16px; }
+
+#submit-note { margin: 8px 0 0; }
+#submit-note.error { color: var(--accent); }
+
+/* ---- initials entry ---- */
+
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+
+#initials-modal {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, .75);
+}
+#initials-modal[hidden] { display: none; }
+
+#initials-box {
+  position: relative;
+  background: #000;
+  border: 3px solid var(--accent);
+  color: #fff;
+  font-family: var(--mono);
+  text-align: center;
+  padding: 22px 30px;
+  max-width: 90vw;
+}
+#initials-box:focus { outline: none; }
+
+#initials-heading {
+  margin: 0 0 4px;
+  color: var(--accent);
+  font-size: 17px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+#initials-rank { margin: 0 0 16px; font-size: 13px; color: #ddd; }
+
+#initials-slots { display: flex; gap: 14px; justify-content: center; margin-bottom: 6px; }
+
+.slot {
+  display: block;
+  width: 34px;
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: bold;
+  color: #0f0;
+  border-bottom: 3px solid #0f0;
+}
+.slot.active { border-bottom-color: #fff; animation: blink 1s step-end infinite; }
+.slot::after { content: "\00a0"; }          /* keeps height when empty */
+.slot.filled::after { content: none; }
+
+@keyframes blink {
+  50% { border-bottom-color: transparent; }
+}
+
+/* Real input, invisible but focusable — gives us mobile keyboards and a11y
+   without drawing a text box. The slots above are the visible rendering. */
+#initials-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  cursor: default;
+}
+
+.initials-hint { margin: 10px 0 0; font-size: 11px; color: #999; letter-spacing: 1px; }
+#initials-countdown { margin: 6px 0 0; font-size: 11px; color: #666; }
+
+@media (prefers-reduced-motion: reduce) {
+  .slot.active { animation: none; }
+}
+
 /* ---- score board ---- */
 
-#board { border-collapse: collapse; width: 100%; max-width: 480px; font-family: var(--mono); font-size: 14px; }
-#board th, #board td { border: 1px solid var(--rule); padding: 3px 8px; text-align: left; }
-#board th { background: var(--stripe); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
-#board td.rank, #board th.rank { width: 34px; text-align: right; }
-#board td.score, #board th.score { text-align: right; }
-#board td.when, #board th.when { color: var(--muted); font-size: 12px; }
-#board tr.empty td { color: var(--muted); }
-#board tr.fresh td { color: var(--accent); font-weight: bold; }
+#board, .board { border-collapse: collapse; width: 100%; max-width: 480px; font-family: var(--mono); font-size: 14px; }
+#board th, #board td, .board th, .board td { border: 1px solid var(--rule); padding: 3px 8px; text-align: left; }
+#board th, .board th { background: var(--stripe); font-size: 11px; text-transform: uppercase; letter-spacing: .5px; }
+#board td.rank, #board th.rank, .board td.rank, .board th.rank { width: 34px; text-align: right; }
+#board td.score, #board th.score, .board td.score, .board th.score { text-align: right; }
+#board td.when, #board th.when, .board td.when, .board th.when { color: var(--muted); font-size: 12px; }
+#board tr.empty td, .board tr.empty td { color: var(--muted); }
+#board tr.fresh td, .board tr.fresh td { color: var(--accent); font-weight: bold; }
 
 /* ---- small screens ---- */
 
@@ -159,4 +249,48 @@ code { font-family: var(--mono); font-size: 12px; background: var(--stripe); pad
   }
   #stage { aspect-ratio: 1 / 1; }
   #game-grid li { width: calc(50% - 6px); }
+}
+
+/* ---- scores page ---- */
+
+#scores-page { padding: 14px; max-width: 1100px; }
+#scores-page h1 { margin-bottom: 16px; }
+.board-section { margin-bottom: 28px; }
+.board-section h2 { margin-top: 0; }
+.board-section h2 a { text-decoration: none; }
+.board-section h2 a:hover { text-decoration: underline; }
+
+/* ---- about page ---- */
+
+#about-page { padding: 14px; max-width: 680px; }
+#about-page h1 { margin-bottom: 8px; }
+#about-page h2 { margin-top: 24px; }
+#about-page pre { background: var(--stripe); border: 1px solid var(--rule); padding: 10px 14px; overflow-x: auto; font-size: 12px; }
+
+/* ---- optional CRT theme (?theme=crt) ---- */
+
+body[data-theme="crt"] {
+  --bg: #001a00;
+  --text: #00cc00;
+  --muted: #006600;
+  --link: #00ee00;
+  --visited: #008800;
+  --accent: #00ff44;
+  --rule: #004400;
+  --stripe: #002600;
+}
+
+body[data-theme="crt"]::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.12) 2px,
+    rgba(0, 0, 0, 0.12) 4px
+  );
 }

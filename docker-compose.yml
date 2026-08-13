@@ -1,0 +1,12 @@
+services:
+  arcade:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      # Score data and rate-limit state persist across restarts and deploys.
+      - arcade_data:/var/www/html/data
+    restart: unless-stopped
+
+volumes:
+  arcade_data:

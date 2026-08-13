@@ -1,0 +1,11 @@
+{
+  "title": "Breakout",
+  "entry": "index.html",
+  "description": "Clear every brick. Three balls, no continues.",
+  "author": "jek",
+  "year": 1976,
+  "controls": "Move the mouse, or arrow keys / A and D · SPACE launches",
+  "scoring": "high",
+  "maxScore": 100000,
+  "tags": ["classic", "single-player"]
+}

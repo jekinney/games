@@ -1,0 +1,4 @@
+# Score data is not web content. This directory already sits outside the
+# document root (public/); this is the belt to that suspenders, in case the
+# site is ever served from the project root by mistake.
+Require all denied

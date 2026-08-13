@@ -9,12 +9,20 @@
   'use strict';
 
   var BOARD_SIZE = 10;
+  // A score arriving this soon after the frame mounted is a console one-liner,
+  // not a game. Kept short on purpose: a genuinely fast death in Snake can
+  // happen a couple of seconds in, and refusing a real score is worse than
+  // letting a determined cheat through (see docs/plan/03-scores-api.md).
+  var MIN_PLAY_MS = 2000;
+  var COUNTDOWN_SECONDS = 10;  // arcade auto-submit
 
   var state = {
     games: [],
     byId: {},
     current: null,   // the game object being played
-    frame: null      // the live iframe element
+    frame: null,     // the live iframe element
+    mountedAt: 0,
+    modal: null      // { resolve, timer, deadline } while initials entry is open
   };
 
   var el = {
@@ -32,7 +40,17 @@
     stage: document.getElementById('stage'),
     stageStatus: document.getElementById('stage-status'),
     boardTitle: document.getElementById('board-title'),
-    boardBody: document.getElementById('board-body')
+    boardBody: document.getElementById('board-body'),
+    liveScore: document.getElementById('live-score'),
+    liveScoreValue: document.getElementById('live-score-value'),
+    submitNote: document.getElementById('submit-note'),
+    modal: document.getElementById('initials-modal'),
+    modalBox: document.getElementById('initials-box'),
+    modalHeading: document.getElementById('initials-heading'),
+    modalRank: document.getElementById('initials-rank'),
+    modalInput: document.getElementById('initials-input'),
+    modalCountdown: document.getElementById('initials-countdown'),
+    slots: Array.prototype.slice.call(document.querySelectorAll('#initials-slots .slot'))
   };
 
   /* ---------- helpers ---------- */
@@ -228,6 +246,9 @@
     }
 
     text(el.boardTitle, 'Top ' + BOARD_SIZE + ' — ' + game.title);
+    show(el.liveScore, false);
+    text(el.liveScoreValue, '0');
+    show(el.submitNote, false);
     renderBoard([]);
     loadScores(game.id);
 
@@ -261,14 +282,11 @@
   /* ---------- score board ---------- */
 
   function loadScores(gameId) {
-    fetch('/api/scores.php?game=' + encodeURIComponent(gameId), { headers: { Accept: 'application/json' } })
-      .then(function (r) { return r.ok ? r.json() : { scores: [] }; })
-      .then(function (data) {
-        // Ignore a response that arrived after the player switched games.
-        if (!state.current || state.current.id !== gameId) return;
-        renderBoard(data.scores || []);
-      })
-      .catch(function () { /* board stays empty; not worth an error message */ });
+    fetchScores(gameId).then(function (scores) {
+      // Ignore a response that arrived after the player switched games.
+      if (!state.current || state.current.id !== gameId) return;
+      renderBoard(scores);
+    });
   }
 
   function renderBoard(scores, freshRank) {
@@ -316,10 +334,190 @@
       case 'ready':
         show(el.stageStatus, false);
         break;
-      // 'score', 'set-score' and 'get-scores' arrive in M4 with the SDK.
+
+      case 'set-score':
+        text(el.liveScoreValue, Number(msg.value || 0).toLocaleString());
+        show(el.liveScore, true);
+        break;
+
+      case 'score':
+        handleScore(msg);
+        break;
+
+      case 'get-scores':
+        fetchScores(state.current.id).then(function (scores) {
+          replyToGame(msg.requestId, { scores: scores });
+        });
+        break;
+
       default:
         console.debug('[arcade] unhandled message from game:', msg.type);
     }
+  }
+
+  function replyToGame(requestId, payload) {
+    if (!state.frame || !requestId) return;
+    var msg = { source: 'arcade-shell', requestId: requestId };
+    for (var k in payload) {
+      if (Object.prototype.hasOwnProperty.call(payload, k)) msg[k] = payload[k];
+    }
+    state.frame.contentWindow.postMessage(msg, window.location.origin);
+  }
+
+  /* ---------- game over ---------- */
+
+  function handleScore(msg) {
+    var game = state.current;
+    if (!game) return;
+
+    var score = Math.floor(Number(msg.value));
+    if (!isFinite(score) || score < 0) {
+      console.warn('[arcade] ignoring invalid score:', msg.value);
+      replyToGame(msg.requestId, { accepted: false, rank: null, scores: [] });
+      return;
+    }
+
+    // Nobody plays a game in under three seconds. This is the console-cheat guard.
+    if (Date.now() - state.mountedAt < MIN_PLAY_MS) {
+      console.warn('[arcade] score ignored: game had not been running long enough');
+      note('That game ended too fast to record a score.', true);
+      replyToGame(msg.requestId, { accepted: false, rank: null, scores: [] });
+      return;
+    }
+
+    // Prompt optimistically: a round-trip before the modal would stall the
+    // most dramatic moment. If it turns out not to place, we say so after.
+    askForInitials(score).then(function (initials) {
+      return postScore(game.id, score, initials);
+    }).then(function (result) {
+      if (!result) {
+        note('Could not save that score. Try again later.', true);
+        replyToGame(msg.requestId, { accepted: false, rank: null, scores: [] });
+        return;
+      }
+
+      renderBoard(result.scores || [], result.rank);
+
+      if (result.accepted) {
+        note('You placed #' + result.rank + ' as ' + result.initials + '.', false);
+      } else {
+        note('Score ' + score.toLocaleString() + ' — not quite enough for the top ' + BOARD_SIZE + '.', false);
+      }
+
+      replyToGame(msg.requestId, {
+        accepted: result.accepted,
+        rank: result.rank,
+        scores: result.scores || []
+      });
+    });
+  }
+
+  function note(message, isError) {
+    text(el.submitNote, message);
+    el.submitNote.classList.toggle('error', !!isError);
+    show(el.submitNote, true);
+  }
+
+  function fetchScores(gameId) {
+    return fetch('/api/scores.php?game=' + encodeURIComponent(gameId), { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : { scores: [] }; })
+      .then(function (data) { return data.scores || []; })
+      .catch(function () { return []; });
+  }
+
+  function postScore(gameId, score, initials) {
+    return fetch('/api/scores.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ game: gameId, score: score, initials: initials })
+    })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function (err) {
+        console.error('[arcade] score post failed:', err);
+        return null;
+      });
+  }
+
+  /* ---------- initials entry ---------- */
+
+  function askForInitials(score) {
+    return new Promise(function (resolve) {
+      var value = '';
+
+      text(el.modalHeading, 'New High Score!');
+      text(el.modalRank, score.toLocaleString() + ' points — enter your initials');
+      el.modalInput.value = '';
+      paintSlots('');
+      show(el.modal, true);
+
+      // Focus has to come back from the iframe or we get no keystrokes.
+      window.focus();
+      el.modalInput.focus();
+
+      var remaining = COUNTDOWN_SECONDS;
+      tick();
+
+      var timer = setInterval(function () {
+        remaining -= 1;
+        tick();
+        if (remaining <= 0) finish();
+      }, 1000);
+
+      function tick() {
+        text(el.modalCountdown, 'auto-submits in ' + Math.max(remaining, 0) + 's');
+      }
+
+      function paintSlots(current) {
+        el.slots.forEach(function (slot, i) {
+          var ch = current.charAt(i);
+          text(slot, ch);
+          slot.classList.toggle('filled', ch !== '');
+          slot.classList.toggle('active', i === current.length);
+        });
+      }
+
+      function onInput() {
+        // Strip anything that isn't A-Z0-9 and keep the input in sync with the slots.
+        value = el.modalInput.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 3);
+        el.modalInput.value = value;
+        paintSlots(value);
+      }
+
+      function onKeyDown(event) {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          finish();
+        } else if (event.key === 'Escape') {
+          event.preventDefault();
+          finish();
+        }
+      }
+
+      function finish() {
+        clearInterval(timer);
+        el.modalInput.removeEventListener('input', onInput);
+        el.modalInput.removeEventListener('keydown', onKeyDown);
+        el.modal.removeEventListener('mousedown', keepFocus);
+        show(el.modal, false);
+        state.modal = null;
+
+        // Fewer than three characters pads with A, same as the cabinets.
+        var initials = value === '' ? 'AAA' : (value + 'AAA').slice(0, 3);
+        resolve(initials);
+      }
+
+      function keepFocus(event) {
+        // Clicking the backdrop shouldn't steal focus from the input.
+        event.preventDefault();
+        el.modalInput.focus();
+      }
+
+      el.modalInput.addEventListener('input', onInput);
+      el.modalInput.addEventListener('keydown', onKeyDown);
+      el.modal.addEventListener('mousedown', keepFocus);
+
+      state.modal = { resolve: resolve, cancel: finish };
+    });
   }
 
   boot();

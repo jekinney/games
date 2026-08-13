@@ -1,0 +1,22 @@
+# Digital Ocean App Platform spec.
+# Deploy: doctl apps create --spec .do/app.yaml
+# Or connect the repo in the DO dashboard — it will pick this file up automatically.
+#
+# The storage mount keeps scores alive across deploys. Set the mount path
+# to /var/www/html/data when prompted in the dashboard, or let this spec
+# handle it. Requires a Basic or higher instance size.
+
+name: retro-arcade
+region: nyc
+
+services:
+- name: web
+  dockerfile_path: Dockerfile
+  http_port: 80
+  instance_count: 1
+  instance_size_slug: basic-xs
+  routes:
+  - path: /
+  storage_mounts:
+  - mount_path: /var/www/html/data
+    size_bytes: 1073741824   # 1 GB
